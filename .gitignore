@@ -6,3 +6,12 @@ dist-ssr
 dist
 yarn-error.log
 .media
+
+# secrets
+.env
+.env.local
+.env.*.local
+
+# packaged extension / signing
+*.zxp
+*.p12
