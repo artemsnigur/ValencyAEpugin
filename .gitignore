@@ -15,3 +15,6 @@ yarn-error.log
 # packaged extension / signing
 *.zxp
 *.p12
+
+# claude code local overrides
+.claude/settings.local.json
