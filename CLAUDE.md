@@ -15,16 +15,34 @@ Calls from UI into the host layer go through `evalTS("functionName", args)`.
 When adding a feature, decide first which layer each piece belongs to.
 If logic can live in `src/js/`, it must live there.
 
+## Exposing host functions
+
+Declaring a function in `src/jsx/aeft/aeft.ts` is not enough for `evalTS()`
+to see it. It must also be re-exported through `src/jsx/index.ts`, which is
+where the `Scripts` type is assembled. Adding a host function is always two
+edits, never one.
+
 ## Host layer constraints — read before editing src/jsx/
 
-Code in `src/jsx/` compiles down to ES3. The build will NOT catch violations;
-they fail at runtime inside After Effects.
+Code in `src/jsx/` is written in ES6 and compiled down to ES3 by Babel.
 
-Forbidden: const, let, arrow functions, template literals, destructuring,
-spread, Promise, async/await, Array.map/filter/forEach/indexOf/find,
-Object.keys, JSON methods beyond what the bundled JSON2 provides.
+SYNTAX IS FINE. const, let, arrow functions, template literals,
+destructuring and spread are all transpiled by @babel/preset-env.
 
-Use only: var, function declarations, for loops, plain string concatenation.
+RUNTIME METHODS ARE NOT. Babel does not polyfill them, and they fail at
+runtime inside After Effects with no build-time warning.
+
+Never use in src/jsx/:
+- Array.prototype.map / filter / forEach / indexOf / find / includes
+- Object.keys, Object.assign, Object.entries
+- String.prototype.includes / trim / startsWith / endsWith
+- Promise, async/await — there is no event loop in ExtendScript
+- Array.isArray, Object.freeze — use the ponyfilled versions
+
+Replacements already exist in `src/jsx/utils/utils.ts`
+(forEach, map, filter, includes, indexOf, join). Import from there.
+When you need a helper that is missing, add it to utils.ts rather than
+writing an inline loop each time.
 
 Every operation that modifies the project must be wrapped:
   app.beginUndoGroup("Action name");

@@ -3,8 +3,8 @@ import { version } from "./package.json";
 
 const config: CEP_Config = {
   version,
-  id: "com.bolt.cep", 
-  displayName: "Valency67CFN", 
+  id: "com.valency.aepanel",
+  displayName: "Valency",
   symlink: "local",
   port: 3000,
   servePort: 5000,
@@ -28,7 +28,7 @@ const config: CEP_Config = {
     {
       mainPath: "./main/index.html",
       name: "main",
-      panelDisplayName: "Valency67CFN", 
+      panelDisplayName: "Valency",
       autoVisible: true,
       width: 600,
       height: 650,
