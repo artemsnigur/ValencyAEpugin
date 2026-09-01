@@ -752,3 +752,68 @@ h3 {
     filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
   }
 }
+
+// --- Render queue, ported from AutoEditRestored/style.css -------------------
+
+.panel-hint {
+  text-align: center;
+  font-size: 9px;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.fav-star.render-icon-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s,
+    border-color 0.2s, background-color 0.2s;
+}
+
+.render-btn {
+  margin-top: 15px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  font-size: 13px;
+  height: 36px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.05);
+  }
+}
+
+.select-separator {
+  font-size: 1px;
+}
+
+.dest-folders {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: opacity 0.2s ease;
+
+  &.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+}
+
+.folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.folder-btn {
+  flex: 0 0 32px;
+  padding: 0;
+  height: 28px;
+}
+
+.path-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

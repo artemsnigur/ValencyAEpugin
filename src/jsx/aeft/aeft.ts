@@ -1061,3 +1061,376 @@ export var savePresetDialog = function (): HostResult {
   }
   return { ok: true, message: "" };
 };
+
+// --- Render ------------------------------------------------------------------
+
+export type RenderTemplatesResult = HostResult & {
+  templates: string[];
+  /** True when the project had to be modified to read the list. */
+  dirtied: boolean;
+  /** True when only the fabricate path was available and it was not allowed. */
+  needsDirty: boolean;
+};
+
+/**
+ * Read the Output Module template list.
+ *
+ * OutputModule.templates is the only documented route to this list, and an
+ * OutputModule only exists on a render queue item - which is why the original
+ * fabricated a temp comp and queue item to read a property off it.
+ *
+ * Two problems with that. Project.dirty is read-only with no way to reset it,
+ * so merely opening the Render tab marked the project modified and the user got
+ * an unexplained "save changes?" on quit. And both removals sat inside a try
+ * with an empty catch, so a throw left a comp literally named "Temp" plus an
+ * orphaned render queue item in the project, silently.
+ *
+ * Here: reuse an existing queue item when there is one, which costs nothing and
+ * mutates nothing; only fabricate when the queue is empty, and clean up in a
+ * finally so the temp items cannot leak.
+ */
+export var getRenderTemplates = function (
+  allowDirty: boolean
+): RenderTemplatesResult {
+  var rq = app.project.renderQueue;
+
+  // Free path: something is already queued, so an output module already exists.
+  if (rq.numItems > 0) {
+    try {
+      return {
+        ok: true,
+        message: "",
+        templates: rq.item(1).outputModule(1).templates,
+        dirtied: false,
+        needsDirty: false,
+      };
+    } catch (e) {
+      // Fall through to the fabricate path.
+    }
+  }
+
+  // Nothing queued: the list can only be read by modifying the project, and
+  // Project.dirty cannot be cleared afterwards. Let the caller decide.
+  if (!allowDirty) {
+    return {
+      ok: false,
+      message: "",
+      templates: [],
+      dirtied: false,
+      needsDirty: true,
+    };
+  }
+
+  var tempComp: CompItem | null = null;
+  var tempItem: RenderQueueItem | null = null;
+  var templates = ["Lossless"];
+  var failure = "";
+
+  try {
+    tempComp = app.project.items.addComp("Temp", 100, 100, 1, 1, 1);
+    tempItem = rq.items.add(tempComp);
+    templates = tempItem.outputModule(1).templates;
+  } catch (e: any) {
+    failure = e && e.message ? e.message : "unknown error";
+  } finally {
+    // Unmissable: without this a throw above leaves a stray "Temp" comp and an
+    // orphaned queue item in the user's project.
+    try {
+      if (tempItem) tempItem.remove();
+    } catch (e) {}
+    try {
+      if (tempComp) tempComp.remove();
+    } catch (e) {}
+    try {
+      rq.showWindow(false);
+    } catch (e) {}
+  }
+
+  if (failure !== "") {
+    return {
+      ok: false,
+      message: "Could not read render templates: " + failure,
+      templates: templates,
+      dirtied: true,
+      needsDirty: false,
+    };
+  }
+  return {
+    ok: true,
+    message: "",
+    templates: templates,
+    dirtied: true,
+    needsDirty: false,
+  };
+};
+
+export type RenderOptions = {
+  templateName: string;
+  useSpecificFolder: boolean;
+  destPath: string;
+  autoImport: boolean;
+  autoWorkArea: boolean;
+  renderPrefix: string;
+};
+
+/** The prefix is a filename fragment the user typed, not a pattern. */
+var escapeRegExp = function (text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+/**
+ * Queue the active comp and render it.
+ *
+ * Ported from $.global.startZxpRender. Notable changes:
+ *  - the six arguments arrive typed; the three booleans were being compared as
+ *    the strings "true"/"false".
+ *  - renderPrefix is escaped before it reaches a RegExp. The original pasted it
+ *    in raw, so a prefix containing a bracket threw an invalid-regex error the
+ *    surrounding code did not catch.
+ *  - the solo and work-area restore runs in a finally; previously a throw
+ *    anywhere after they were set left layers soloed and the work area wrong.
+ *  - only the auto-import is wrapped in an undo group. The rest of the function
+ *    saves the project, purges caches and renders, none of which is undoable,
+ *    and an undo group spanning a save would offer to walk the user back past
+ *    the state just written to disk.
+ *  - the duplicated work-area block in the original is collapsed to one.
+ */
+export var startRender = function (options: RenderOptions): HostResult {
+  var comp = app.project.activeItem;
+  if (!comp || !(comp instanceof CompItem)) {
+    return { ok: false, message: "Select a composition first." };
+  }
+  if (!options.templateName || options.templateName === "") {
+    return { ok: false, message: "Select a render template first." };
+  }
+  if (options.useSpecificFolder && (!options.destPath || options.destPath === "")) {
+    return { ok: false, message: "Destination folder is not set." };
+  }
+
+  var renderPrefix = options.renderPrefix;
+  if (!renderPrefix || renderPrefix === "") renderPrefix = "autorender";
+
+  var rq = app.project.renderQueue;
+  for (var i = rq.items.length; i > 0; i--) {
+    if (rq.items[i].status === RQItemStatus.QUEUED) {
+      rq.items[i].remove();
+    }
+  }
+
+  var item = rq.items.add(comp);
+  var om = item.outputModules[1];
+  try {
+    om.applyTemplate(options.templateName);
+  } catch (e) {
+    item.remove();
+    return {
+      ok: false,
+      message:
+        'Template "' +
+        options.templateName +
+        '" not found. Check it still exists in your Output Module settings.',
+    };
+  }
+
+  var originalName = decodeURI(om.file.name);
+  var isSequence = originalName.indexOf("[#") !== -1;
+  var extMatch = originalName.match(/(\.[a-zA-Z0-9]+)$/);
+  var ext = extMatch ? extMatch[0] : "";
+
+  // Filesystem read, but it depends on the extension the template just chose,
+  // so it cannot be resolved panel-side without a second round trip.
+  var getNextAutoNumber = function (dirPath: string): number {
+    var folder = new Folder(dirPath);
+    if (!folder.exists) return 1;
+    var files = folder.getFiles();
+    var maxNum = 0;
+    var pattern = new RegExp("^" + escapeRegExp(renderPrefix) + "\\s*(\\d+)", "i");
+    for (var f = 0; f < files.length; f++) {
+      if (files[f] instanceof File) {
+        var match = decodeURI(files[f].name).match(pattern);
+        if (match) {
+          var num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+    }
+    return maxNum + 1;
+  };
+
+  var buildDefaultName = function (dirPath: string): string {
+    var name = renderPrefix + " " + getNextAutoNumber(dirPath);
+    return name + (isSequence ? "_[#####]" + ext : ext);
+  };
+
+  var chosenFilePath = "";
+  var defaultName = "";
+  if (options.useSpecificFolder) {
+    defaultName = buildDefaultName(options.destPath);
+    chosenFilePath = options.destPath + "/" + defaultName;
+  } else {
+    var lastPath = app.settings.haveSetting("RenderAutomator", "lastPath")
+      ? app.settings.getSetting("RenderAutomator", "lastPath")
+      : "~/";
+    if (!new Folder(lastPath).exists) lastPath = "~/";
+    defaultName = buildDefaultName(lastPath);
+    var outputFile = new File(lastPath + "/" + defaultName).saveDlg(
+      "Save output as..."
+    ) as File | null;
+    if (!outputFile) {
+      item.remove();
+      return { ok: false, message: "" };
+    }
+    chosenFilePath = outputFile.fsName;
+    app.settings.saveSetting("RenderAutomator", "lastPath", outputFile.parent.fsName);
+  }
+
+  var fileObj = new File(chosenFilePath);
+  var finalName = decodeURI(fileObj.name);
+  if (isSequence) {
+    if (finalName.indexOf("[#") === -1) {
+      if (ext && finalName.toLowerCase().slice(-ext.length) === ext.toLowerCase()) {
+        finalName = finalName.slice(0, -ext.length);
+      }
+      var suffixMatch = defaultName.match(/([^a-zA-Z0-9])?\[#+\].*$/);
+      finalName += suffixMatch ? suffixMatch[0] : "_[#####]" + ext;
+    }
+  } else if (ext && finalName.toLowerCase().slice(-ext.length) !== ext.toLowerCase()) {
+    finalName += ext;
+  }
+  om.file = new File(fileObj.parent.fsName + "/" + encodeURI(finalName));
+
+  var selectedLayers = comp.selectedLayers;
+  var hasSelection = selectedLayers.length > 0;
+  var activeLayers: Layer[] = [];
+  forEach(selectedLayers, function (layer) {
+    if (layer.enabled && !layer.locked) activeLayers.push(layer);
+  });
+
+  var originalWorkAreaStart = comp.workAreaStart;
+  var originalWorkAreaDuration = comp.workAreaDuration;
+  var targetInPoint = comp.time;
+  var topLayer: Layer | null = null;
+  var failure = "";
+
+  if (hasSelection) {
+    var minIn = comp.duration;
+    var maxOut = 0;
+    var topIndex = 999999;
+    forEach(selectedLayers, function (layer) {
+      if (layer.inPoint < minIn) minIn = layer.inPoint;
+      if (layer.outPoint > maxOut) maxOut = layer.outPoint;
+      if (layer.index < topIndex) {
+        topIndex = layer.index;
+        topLayer = layer;
+      }
+    });
+
+    forEach(activeLayers, function (layer) {
+      (layer as AVLayer).solo = true;
+    });
+    targetInPoint = minIn;
+
+    if (options.autoWorkArea && minIn < maxOut) {
+      try {
+        comp.workAreaStart = 0;
+        comp.workAreaDuration = comp.duration;
+        comp.workAreaStart = minIn;
+        comp.workAreaDuration = maxOut - minIn;
+      } catch (e) {}
+    }
+  }
+
+  try {
+    try {
+      if (app.project.file !== null) app.project.save();
+    } catch (e) {}
+    try {
+      app.purge(PurgeTarget.ALL_CACHES);
+    } catch (e) {}
+
+    rq.render();
+    rq.showWindow(false);
+    comp.openInViewer();
+  } catch (e: any) {
+    failure = e && e.message ? e.message : "unknown error";
+  } finally {
+    // Unmissable: a throw during the render must not leave layers soloed and
+    // the work area moved, with nothing on screen explaining why.
+    if (hasSelection) {
+      try {
+        forEach(activeLayers, function (layer) {
+          (layer as AVLayer).solo = false;
+        });
+        if (options.autoWorkArea) {
+          comp.workAreaStart = 0;
+          comp.workAreaDuration = comp.duration;
+          comp.workAreaStart = originalWorkAreaStart;
+          comp.workAreaDuration = originalWorkAreaDuration;
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (failure !== "") {
+    return { ok: false, message: "Render failed: " + failure };
+  }
+
+  var imported = false;
+  if (options.autoImport) {
+    // The only lasting, undoable change this function makes.
+    app.beginUndoGroup("Import Render Result");
+    try {
+      var fileToImport: File | null = om.file;
+      var seqFound = false;
+      if (isSequence) {
+        var targetFolder = new Folder(om.file.parent.fsName);
+        var rawPrefix = decodeURI(finalName);
+        var prefixName = rawPrefix.substring(0, rawPrefix.indexOf("[#"));
+        var allFiles = targetFolder.getFiles();
+        for (var g = 0; g < allFiles.length; g++) {
+          var candidate = decodeURI(allFiles[g].name);
+          if (
+            candidate.indexOf(prefixName) === 0 &&
+            candidate.toLowerCase().indexOf(ext.toLowerCase()) !== -1
+          ) {
+            fileToImport = allFiles[g] as File;
+            seqFound = true;
+            break;
+          }
+        }
+      }
+
+      if (fileToImport && fileToImport.exists) {
+        var io = new ImportOptions(fileToImport);
+        if (isSequence && seqFound) {
+          io.sequence = true;
+          io.forceAlphabetical = true;
+        }
+        var importedItem = app.project.importFile(io);
+        if (isSequence && seqFound) {
+          (importedItem as FootageItem).mainSource.conformFrameRate = comp.frameRate;
+        }
+        var newLayer = comp.layers.add(importedItem as AVItem);
+        newLayer.startTime = targetInPoint;
+        if (hasSelection && topLayer) {
+          newLayer.moveBefore(topLayer);
+        }
+        imported = true;
+      }
+    } catch (e: any) {
+      failure = e && e.message ? e.message : "unknown error";
+    } finally {
+      app.endUndoGroup();
+    }
+    comp.openInViewer();
+  }
+
+  if (failure !== "") {
+    return { ok: false, message: "Rendered, but the auto-import failed: " + failure };
+  }
+  return {
+    ok: true,
+    message:
+      "Rendered to " + decodeURI(finalName) + (imported ? " and imported." : "."),
+  };
+};

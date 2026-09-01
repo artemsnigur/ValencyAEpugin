@@ -324,3 +324,88 @@ list refreshes to include the new preset without reopening the panel.
 > lookup fails and it falls through to the hardcoded 3075. Worth trying on a
 > localised AE if you have one; if 3075 is wrong there, nothing can be done
 > beyond telling the user.
+
+## [ ] 07 — Render: the stray "Temp" comp (check this first)
+
+**You may already have one from the shipped panel.** Its `getSystemTemplates`
+fabricated a comp named `Temp` plus a render queue item to read the output
+module template list, and removed them inside a `try` with an empty `catch` — so
+any throw left both behind, silently.
+
+**Steps:** open your existing projects and look for a 100×100 composition named
+`Temp` at the project root, and for an orphaned render queue item.
+
+**If you find one, it is ours, not yours.** Safe to delete. The port removes
+both in a `finally`, so it cannot happen again.
+
+## [ ] 07 — Render: the project no longer gets dirtied on every visit
+
+`Project.dirty` is read-only with no way to reset it, so the old behaviour was
+permanent: opening the Render tab modified the project and you got an
+unexplained "save changes?" on quit.
+
+**Steps:** open a saved project (no asterisk in the title). **With at least one
+item in the render queue**, open the Render tab.
+**Correct:** templates populate and **the project is still not marked modified**.
+
+**Then:** close the project without saving, reopen it, empty the render queue,
+and open the Render tab again.
+**Correct:** templates still populate (from the cache) and the project is still
+clean. Only a first-ever run with an empty cache, or pressing ⟳, pays the cost.
+
+**⟳ always pays it** — that is deliberate. Press it and the project will be
+marked modified if the queue is empty.
+
+## [ ] 07 — Render: templates stay current
+
+Output module templates live in AE's preferences, not the project, so a cache
+cannot know about one added elsewhere.
+
+**Steps:** add a new output module template in After Effects. With something in
+the render queue, revisit the Render tab.
+**Correct:** the new template appears without pressing ⟳ — the free read runs on
+every visit and refreshes the cache. With an *empty* queue it will not appear
+until you press ⟳; that is the documented trade.
+
+The cache is keyed to the AE version, so upgrading should show a fresh read
+rather than a stale list.
+
+## [ ] 07 — Render: the render itself
+
+**Setup:** a comp, a valid output template, and a destination folder.
+
+**Steps:** render with "Render to specific folder" on, and again with it off
+(save dialog). Try with a layer selection and without. Try with Auto-set Work
+Area on. Try with Auto-Import on, for both a movie template and an image
+sequence template.
+
+**Correct:** output matches the shipped panel — same filename numbering
+(`prefix N`), same sequence padding, same folder. With a selection, only the
+selected enabled+unlocked layers are soloed during the render and **un-soloed
+afterwards**, and the work area is restored to exactly where it was. Auto-import
+adds the result above the topmost selected layer at its in point.
+
+**Undo:** one Cmd+Z removes the auto-imported layer. Nothing else is undoable —
+deliberate. The render, the project save and the cache purge are not undoable
+operations, and an undo group spanning `app.project.save()` would offer to walk
+you back past a state already written to disk.
+
+## [ ] 07 — Render: prefix with regex characters
+
+**Steps:** set the render prefix (theme tab, or `localStorage["render-prefix"]`)
+to something containing brackets or a dot — `shot(a)` or `v1.5` — and render
+twice into the same folder.
+
+**Correct:** both renders succeed and the second is numbered one higher than the
+first. In the shipped panel `shot(a)` threw an uncaught invalid-regex error and
+`v1.5` matched the wrong files, because the prefix went into a `RegExp`
+unescaped.
+
+## [ ] 07 — Render: misconfigured click keeps your queue
+
+**Steps:** queue up some render items by hand. Turn on "Render to specific
+folder" but leave the selected destination unset. Click RENDER.
+
+**Correct:** "Destination folder is not set." and **your queued items are still
+there**. The original removed every QUEUED item first and only then discovered
+the destination was missing.

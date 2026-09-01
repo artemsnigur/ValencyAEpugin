@@ -3,6 +3,7 @@ import { AutoTwixtor } from "./components/AutoTwixtor";
 import { DuplicateFrames } from "./components/DuplicateFrames";
 import { GraphEditor } from "./components/GraphEditor";
 import { PresetBrowser } from "./components/PresetBrowser";
+import { RenderQueue } from "./components/RenderQueue";
 import { ProjectUtilities } from "./components/ProjectUtilities";
 import "./main.scss";
 
@@ -29,7 +30,7 @@ const TABS: Tab[] = [
   { id: "tab-twixtor", label: "Twixtor", step: "done" },
   { id: "tab-graph", label: "Graph", step: "done" },
   { id: "tab-presets", label: "Presets", step: "done" },
-  { id: "tab-render", label: "Render", step: "step 07" },
+  { id: "tab-render", label: "Render", step: "done" },
   { id: "tab-library", label: "Library", step: "step 08" },
   { id: "tab-theme", label: "Theme", iconOnly: true, step: "step 09" },
 ];
@@ -130,7 +131,10 @@ export const App = () => {
               ) : tab.id === "tab-presets" ? (
                 <PresetBrowser />
               ) : tab.id === "tab-render" ? (
-                <ProjectUtilities />
+                <>
+                  <RenderQueue />
+                  <ProjectUtilities />
+                </>
               ) : (
                 <p className="tab-placeholder">
                   {tab.label}
