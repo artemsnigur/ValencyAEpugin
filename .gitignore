@@ -11,6 +11,8 @@ yarn-error.log
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
 
 # packaged extension / signing
 *.zxp
@@ -18,3 +20,8 @@ yarn-error.log
 
 # claude code local overrides
 .claude/settings.local.json
+
+# deobfuscated reference dump of the shipped build - not maintained, to be
+# deleted once src/ reaches feature parity. Contains a plaintext endpoint
+# and shared key; must never be committed to this public repo.
+AutoEditRestored/
