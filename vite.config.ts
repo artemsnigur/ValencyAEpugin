@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 
 import { cep, CepOptions, runAction } from "vite-cep-plugin";
 import cepConfig from "./cep.config";
+import { version as pkgVersion } from "./package.json";
 import path from "path";
 import { extendscriptConfig } from "./vite.es.config";
 
@@ -54,6 +55,11 @@ export default defineConfig({
     alias: [{ find: "@esTypes", replacement: path.resolve(__dirname, "src") }],
   },
   root,
+  // root is src/js, and envDir defaults to root - without this Vite would look
+  // for .env inside src/js instead of the project root.
+  envDir: __dirname,
+  // The shipped panel hardcoded LOCAL_VERSION and drifted from package.json.
+  define: { __APP_VERSION__: JSON.stringify(pkgVersion) },
   clearScreen: false,
   server: {
     port: cepConfig.port,

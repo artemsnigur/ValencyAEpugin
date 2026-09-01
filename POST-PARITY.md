@@ -109,3 +109,31 @@ So the picker persists `btn-anim` and changes nothing visible. Ported as-is.
 
 Same shape as item 6: a menu that lies. Either give the three names distinct
 motion, or collapse the control.
+
+## 8. Wire release credentials into CI
+
+`.github/workflows/main.yml` runs `npm run zxp` on tag push with no `.env`
+present, so **a release built today would ship with the licensing placeholders
+and a panel that reports itself unconfigured**.
+
+Needs two repository secrets and a step before the build:
+
+```
+VITE_LICENSE_ENDPOINT
+VITE_LICENSE_KEY
+```
+
+written into a `.env` in the workspace immediately before `npm run zxp`. Not
+wired now — deliberately, so no credential path exists until the endpoint work
+is settled. Until then, releases must be built locally from a real `.env`.
+
+## 9. Machine identity on Windows 11 24H2
+
+Tracked separately in **LICENSING-HWID.md** because it is a live product
+problem rather than migration work: `wmic` is gone in 24H2, so `getHWID` falls
+through to a cached or random identity and customers who upgrade can lose their
+licence. That document has the failure chain, replacement identifiers, the
+macOS exposure, and what the Apps Script has to do first.
+
+The client-side half of the fix is blocked on the server; a client-only change
+causes the lockout it is meant to prevent.
