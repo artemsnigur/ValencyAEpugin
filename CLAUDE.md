@@ -60,6 +60,25 @@ yarn build — build + create symlink into the CEP extensions folder
 yarn dev   — hot reload development mode
 yarn zxp   — package as ZXP for installation
 
+## Verify the tree matches the commit message
+
+After any commit whose changes were applied by a shell chain (`&&`-joined
+commands, a heredoc script, a loop), check the working tree against what the
+commit message claims before moving on.
+
+If a chain breaks partway — a merge conflict, a failed assertion, a non-zero
+exit — every later command is skipped silently. `git commit` still succeeds on
+whatever did land, so you get a plausible commit describing work that is not
+there, and no error anywhere.
+
+This has happened: a commit adding a dev-only licensing bypass shipped the
+release guard and the CSS but none of the four source edits that made the flag
+do anything, because the chain stopped at a merge conflict. The flag looked
+functional and did nothing.
+
+Cheapest guard: `grep` for the thing the message claims, in the file it claims
+to be in. For a build-time flag, check the built bundle, not just the source.
+
 ## Conventions
 
 Branch per tool: tool/<tool-name>
