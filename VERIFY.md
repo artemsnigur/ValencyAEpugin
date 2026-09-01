@@ -485,3 +485,68 @@ see POST-PARITY.md item 4.
 
 A half-written or corrupt `cache_*.json` should fall back to a full rescan
 rather than showing an error — the parse is guarded.
+
+## [ ] 09 — Theme: no flash of defaults on open
+
+**Divergence from the shipped panel, deliberate.** The original called
+`loadTheme()` from `window.onload`, which fires after first paint, so it
+visibly rendered the stylesheet's defaults and then snapped to the user's
+theme. The port applies stored tokens at module scope before React mounts.
+
+**Steps:** save a theme that looks clearly different from the defaults (very
+different gradient), then close and reopen the panel. Watch the first frame.
+
+**Correct:** the panel appears already themed. No blue-then-magenta or
+default-then-yours flash. The shipped panel will still flash — that is the
+difference, not a fault.
+
+## [ ] 09 — Theme: slots are shared with the shipped panel
+
+**Steps:** save a theme into slot 3 in the **shipped** panel, then open the new
+panel and click slot 3. Then the reverse. Rename a slot in one and check the
+other. Load a slot saved before this port existed, if you have one.
+
+**Correct:** identical themes both ways, names carry across. Storage is
+byte-identical: `theme-slot-<N>` holds the same JSON with **every value as a
+string** (`radius: "12"`, not `12`), `theme-name-<N>` the display name,
+`last-active-slot` the id. A slot missing newer fields merges over the defaults
+rather than failing.
+
+## [ ] 09 — Theme: every control applies AND persists
+
+The failure this checks for is a setting that applies but does not survive a
+reload, or saves but does not apply.
+
+**Steps:** change every control — bg colour, radius, both gradient colours,
+both angle buttons, anim, background image, background **video**, video start
+time, fit, blur, dim, hue, volume, render device, prefix, layer colour. After
+each, close and reopen the panel.
+
+**Correct:** each change is visible immediately and still there after a reload.
+The glow behind the active tab should track the gradient start colour — it is
+derived as `<gradStart>66`, not a separate setting.
+
+**Cross-tab, the ones other tabs read:** set Layer Clr to something distinctive
+and apply an Adj preset from the Presets tab — the layer takes that colour. Set
+Prefix and render — the filename uses it. Set Volume and play an audio file in
+the Library tab.
+
+## [ ] 09 — Theme: background video
+
+**Steps:** choose a video background. Scrub the Time slider. Switch to an image
+background, then Clear.
+
+**Correct:** the video plays behind the panel, blurred/dimmed/hue-shifted by
+those sliders, and the Time slider moves its start frame. Switching to an image
+or clearing **stops and releases it** — the original left a stale `src` on the
+element.
+
+## [ ] 09 — Theme: two controls that do nothing (expected)
+
+Both ported faithfully and queued in POST-PARITY.md; **not** faults of the port.
+
+- **Render device** persists but never reaches the renderer, in either panel.
+- **Anim** persists but all three options resolve to identical CSS, in either
+  panel.
+
+**Correct:** they remember their value across a reload and change nothing else.

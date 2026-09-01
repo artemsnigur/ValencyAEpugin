@@ -1630,3 +1630,23 @@ export var importSequences = function (folderPath: string): HostResult {
       (failed > 0 ? " " + failed + " failed." : ""),
   };
 };
+
+/**
+ * Which engine the project is set to render with.
+ *
+ * Read-only, no mutation. Ported from $.global.getProjectRenderEngine.
+ */
+export var getProjectRenderEngine = function (): string {
+  try {
+    if (app.project && app.project.expressionEngine) {
+      var isGPU = false;
+      if (app.project.gpuAccelType !== undefined) {
+        isGPU = app.project.gpuAccelType !== 0;
+      }
+      return isGPU ? "gpu" : "cpu";
+    }
+    return "cpu";
+  } catch (e) {
+    return "cpu";
+  }
+};

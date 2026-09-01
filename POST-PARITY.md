@@ -73,3 +73,39 @@ simply not lazy-loaded yet. Ported as-is.
 Fix: an `onError` handler swapping in a "could not preview" state, now trivial
 since the cards are React components. Distinguishing it from the not-yet-loaded
 state also needs the placeholder to be visibly different from the error state.
+
+## 6. Render device dropdown: wire it or remove it
+
+`#render-device` persists a choice under `render-device` that **never reaches
+the renderer**. In the shipped panel it is read back only to restore the
+dropdown's own value (main.js:1096, 1190) and preserved across a reset (1396,
+1448). `startZxpRender` never looks at it. Ported as-is for parity.
+
+A selector that remembers a choice which does nothing is worse than no
+selector — the user believes they have configured something. Two options:
+
+- **Wire it:** map the choice onto something real. `app.project.gpuAccelType`
+  is settable, so the dropdown could actually switch the project's render
+  engine before queuing.
+- **Remove it.** The read-only "Project render engine: CPU/GPU" line added in
+  step 09 (from `getProjectRenderEngine`) is the honest version of the same
+  information, and it makes the fake selector beside it more confusing, not
+  less.
+
+## 7. Animation dropdown: implement the variants or drop it
+
+`#anim-select` offers Classic Pop / Elastic Bounce / Liquid Glass. In the
+shipped stylesheet all three resolve to **identical rules** — same transition,
+same `brightness(1.08)` hover, same `brightness(0.95)` active — and so does the
+no-attribute default:
+
+```css
+body[data-anim="pop"] .pop-anim, body:not([data-anim]) .pop-anim,
+body[data-anim="elastic"] .pop-anim,
+body[data-anim="glow"] .pop-anim { transition: … }   /* one rule for all */
+```
+
+So the picker persists `btn-anim` and changes nothing visible. Ported as-is.
+
+Same shape as item 6: a menu that lies. Either give the three names distinct
+motion, or collapse the control.

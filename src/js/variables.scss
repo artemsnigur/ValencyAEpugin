@@ -44,8 +44,10 @@ $default-glow: rgba(77, 126, 168, 0.18);
   --text-color: #{$default-text-color};
   --grad-angle: #{$default-grad-angle};
 
-  // Known bug, ported as-is: loadTheme() never updates --glow, so the glow
-  // stays blue while the gradient is magenta. Fix during the theme port.
+  // Pre-JS value only. The theme layer derives --glow from --grad-start with a
+  // "66" alpha suffix on every apply, so once the panel has mounted the glow
+  // tracks the gradient. (An earlier note here called this a bug; it is not -
+  // updateTheme() has always kept the two in step.)
   --glow: #{$default-glow};
 
   // Background layer tokens - the theme UI in step 09 drives all of these.

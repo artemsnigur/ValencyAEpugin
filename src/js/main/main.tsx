@@ -5,6 +5,7 @@ import { GraphEditor } from "./components/GraphEditor";
 import { LibraryBrowser } from "./components/LibraryBrowser";
 import { PresetBrowser } from "./components/PresetBrowser";
 import { RenderQueue } from "./components/RenderQueue";
+import { ThemePanel } from "./components/ThemePanel";
 import { ProjectUtilities } from "./components/ProjectUtilities";
 import "./main.scss";
 
@@ -33,7 +34,7 @@ const TABS: Tab[] = [
   { id: "tab-presets", label: "Presets", step: "done" },
   { id: "tab-render", label: "Render", step: "done" },
   { id: "tab-library", label: "Library", step: "done" },
-  { id: "tab-theme", label: "Theme", iconOnly: true, step: "step 09" },
+  { id: "tab-theme", label: "Theme", iconOnly: true, step: "done" },
 ];
 
 const GearIcon = () => (
@@ -129,6 +130,8 @@ export const App = () => {
                 </>
               ) : tab.id === "tab-graph" ? (
                 <GraphEditor />
+              ) : tab.id === "tab-theme" ? (
+                <ThemePanel />
               ) : tab.id === "tab-library" ? (
                 <LibraryBrowser />
               ) : tab.id === "tab-presets" ? (
