@@ -1,13 +1,61 @@
-$darkest: #222222;
-$darker: #333333;
-$dark: #444444;
-$font: #bbbbbb;
-$highlight: #aaaaaa;
+// Theme tokens, ported from AutoEditRestored
+//
+// These MUST stay CSS custom properties. applyThemeConfig() in the shipped
+// panel rewrites several of them at runtime from a stored config; that lands in
+// step 09. SCSS variables hold the default values only - they compile away, so
+// nothing downstream may reference them. Style against var(--token), never
+// against $default-*.
+//
+// PROVENANCE - the shipped panel has two competing sets of defaults, and these
+// are not the stylesheet's:
+//
+//   loadTheme() at main.js:1161 runs on every load and overwrites the
+//   stylesheet, so its defaults are what a user with empty storage actually
+//   sees. The four tokens below marked "loadTheme" take their values from
+//   there, not from style.css :root, which declares a blue scheme nobody has
+//   ever seen (#1e1e1e / #4d7ea8 / #2c4f6b / 4px radius).
+//
+//   Step 09 owns these four: porting loadTheme() means moving these values into
+//   it and reading the stored config over the top. Nothing here needs undoing.
+//
+// Everything else comes from style.css :root, which loadTheme never touches.
 
-$primary: #88715a;
-$secondary: #4a3928;
+// --- from loadTheme() main.js:1161 ---
+$default-bg-color: #121212;
+$default-grad-start: #ff007f;
+$default-grad-end: #7f00ff;
+$default-radius: 12px;
 
-$active: #20639b;
-$changed: #3caea3;
-$warning: #f6d55c;
-$error: #ed553b;
+// --- from style.css :root ---
+$default-panel-bg: rgba(255, 255, 255, 0.035);
+$default-text-color: #d4d4d4;
+$default-grad-angle: 135deg;
+$default-glow: rgba(77, 126, 168, 0.18);
+
+:root {
+  color-scheme: dark;
+
+  --bg-color: #{$default-bg-color}; // loadTheme
+  --grad-start: #{$default-grad-start}; // loadTheme
+  --grad-end: #{$default-grad-end}; // loadTheme
+  --radius: #{$default-radius}; // loadTheme
+
+  --panel-bg: #{$default-panel-bg};
+  --text-color: #{$default-text-color};
+  --grad-angle: #{$default-grad-angle};
+
+  // Known bug, ported as-is: loadTheme() never updates --glow, so the glow
+  // stays blue while the gradient is magenta. Fix during the theme port.
+  --glow: #{$default-glow};
+
+  // Background layer tokens - the theme UI in step 09 drives all of these.
+  --bg-image: none;
+  --bg-blur: 0px;
+  --bg-size: cover;
+  --bg-overlay: 0.7;
+  --bg-hue: 0deg;
+}
+
+// NOT ported: style.css also carried a [data-theme="light"] block, but nothing
+// in main.js or index.html ever sets that attribute - it is dead in the shipped
+// build. If a light theme is wanted, step 09 owns it.
