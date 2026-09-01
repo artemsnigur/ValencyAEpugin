@@ -1,4 +1,14 @@
-# Verification batch — steps 01–05
+# Verification log
+
+## Batch 1 — steps 01–05 · ✅ PASSED 2026-09-01
+
+Run in full against After Effects. No divergences, nothing to fix. Steps 01–05
+are confirmed at parity with the shipped build. Kept as the record of what was
+checked; new entries append below.
+
+---
+
+# Batch 1 (passed) — steps 01–05
 
 One sitting at the machine, grouped so you set up each project once. **Run in
 order.** Runs A–C are front-loaded because a failure there invalidates
@@ -28,7 +38,7 @@ section `AutoTwix`, key `presetPath`), graph favourites (`localStorage`,
 
 ---
 
-## Run A — Wiring sweep 🛑
+## ✅ Run A — Wiring sweep 🛑
 
 **Setup:** new panel open, **no composition open at all.** No other setup.
 
@@ -54,7 +64,7 @@ nothing, and no `alert()` dialog appears anywhere.**
 🛑 Blocker: the same wiring pattern is reused by every remaining step, so a
 break here means step 06 would repeat it.
 
-## Run B — Dialog suppression checkpoint 🛑
+## ✅ Run B — Dialog suppression checkpoint 🛑
 
 Do this **immediately after Run A**, before anything else. Worse than an undo
 leak: a suppression that never unwinds makes After Effects swallow *every*
@@ -72,7 +82,7 @@ Close Project on an unsaved project, or open Composition Settings.
 **restart After Effects immediately**, report it, and treat every check you ran
 after Run A as void.
 
-## Run C — Duplicate frame parity 🛑
+## ✅ Run C — Duplicate frame parity 🛑
 
 **Setup:** real footage with actual duplicated frames — `sampleImage` needs
 pixels, a solid proves nothing. One comp, one layer, used for all four runs.
@@ -116,7 +126,7 @@ deliberately — it has to match too.
 
 ---
 
-## Run D — Del KF and Align ⚠️
+## ✅ Run D — Del KF and Align ⚠️
 
 **Setup:** same footage comp as Run C. **Reopen the project first** — both of
 these rewrite Time Remap.
@@ -140,7 +150,7 @@ everything including the stretch.
 **A failure in D3 means:** the in-point-hold offset (`startTime += oldIn -
 inPoint`) or the frame-snap rounding. ⚠️ Isolated to this function.
 
-## Run E — Auto Twixtor ⚠️ (plus a 🛑 checkpoint)
+## ✅ Run E — Auto Twixtor ⚠️ (plus a 🛑 checkpoint)
 
 **Setup:** comp with footage, and a valid Twixtor `.ffx`. Set it once via the
 `.ffx` button — **this writes the shared `app.settings` key, so it changes the
@@ -175,7 +185,7 @@ dialog in AE again (Composition Settings).
 **Correct:** it appears. If not, the unwind failed on the success path —
 restart AE and report. 🛑 Blocker.
 
-## Run F — Graph editor ⚠️
+## ✅ Run F — Graph editor ⚠️
 
 **Setup:** a layer with two position keyframes, and separately scale and
 rotation keys.
@@ -202,7 +212,7 @@ grabbed, presets animate ~350ms, ★ lights gold when the current curve matches 
 saved one, neither split panel shrinks below 130px, and both favourites and
 split position survive a reload.
 
-## Run G — Project utilities ⚠️
+## ✅ Run G — Project utilities ⚠️
 
 **Setup:** a **separate scratch project** — these change project structure.
 Include loose root-level items of several kinds (a comp, a solid, a video, an
@@ -223,3 +233,94 @@ duplicated, nested items untouched. One Cmd+Z restores the flat layout.
 **Correct:** it works. This is the case the old English-label menu lookup failed
 on outright and the whole reason for the change. ⚠️ Carry forward if you have no
 localised install.
+
+---
+
+# Batch 2 (pending) — steps 06+
+
+## [ ] 06 — Preset browser: scan and apply
+
+**Setup:** a real preset tree — a root folder with several subfolders, `.ffx`
+files in each.
+
+**Steps:** click ✛ and pick the root. Switch folders with the dropdown. Search.
+Star a preset. Apply one with each Apply mode (Adj / Solid / Selected) and each
+Time mode (Match / 1 Frame / custom, using ▲▼).
+
+**Correct:** the dropdown lists the root plus its immediate subfolders; the list
+shows the `.ffx` files of the selected folder, favourites first then
+alphabetical; search matches across **all** folders. Adj creates an adjustment
+layer, Solid a solid, Selected applies to the selected layer. Match takes the
+selected layer's in/out, 1 Frame is one frame from the playhead, custom is N
+frames. One Cmd+Z per apply.
+
+**A failure in the scan** points at the folder walk having moved panel-side —
+see the note below. **A failure in apply** points at the argument order into
+`applyPreset`.
+
+> The root folder is remembered under `saved-preset-folder-path` and favourites
+> under `fav-presets` — **both the shipped panel's keys**, so the two panels
+> share them, same as the Twixtor path and graph favourites.
+
+> **Dropped: the `app.settings("PS_PRO", "presetRoot")` write.** Audited before
+> removing it, because `app.settings` lives in After Effects, survives
+> reinstalling the extension, and is shared across anything using the same
+> section name.
+>
+> The whole `PS_PRO` section turns out to be write-only. It holds exactly two
+> keys — `presetRoot` (written by `scanPresetFolders`) and `renderPaths`
+> (written by `saveRenderPathsAE`) — and **neither is ever read back**, in
+> `main.js` or `host.jsx`. Both are shadow copies of localStorage values the
+> panel actually reads (`saved-preset-folder-path` and `render-paths`). So the
+> section is not load-bearing for anything else. The other two sections *are*
+> live: `AutoTwix` (Twixtor preset path, read and written) and
+> `RenderAutomator` (last render path, read and written inside
+> `startZxpRender`).
+>
+> **Can the stale value and the new localStorage root disagree visibly? No.**
+> The shipped panel reads its root from localStorage too, never from
+> `app.settings`, and both panels share that key — so a folder picked in either
+> is seen by both. Existing users keep whatever stale value is already in
+> `PS_PRO/presetRoot`; nothing reads it, so nothing changes. The only
+> theoretical exposure is another extension using the same global section name,
+> which is a property of the original design and unaffected by dropping a write.
+>
+> **Note for step 07:** `saveRenderPathsAE` is the other half of this. It is a
+> host function whose only job is writing a key nobody reads.
+
+## [ ] 06 — Preset browser: guard paths
+
+**Steps:** apply a preset with no comp open. With a comp but no layer selected,
+apply with Apply=Selected, and again with Time=Match.
+
+**Correct:** "Select a composition first." / "Select a layer to apply the preset
+to." / "Select a layer to match the duration against." — all in the panel, no
+`alert()`, and **no stray "Apply Preset" entry in Edit > Undo History**. The
+original had no `try` around this body at all, so a throw left the group open.
+
+## [ ] 06 — Preset browser: layer colour
+
+The Layer Clr dropdown lives in the **theme tab**, which lands in step 09. Until
+then this reads `localStorage["layer-color"]` directly, defaulting to 1 (Red) —
+the same key and default the shipped panel uses.
+
+**Steps:** set Layer Clr in the **shipped** panel, then apply an Adj or Solid
+preset from the **new** panel.
+
+**Correct:** the created layer takes that label colour. If it is always red,
+the key is not being read.
+
+## [ ] 06 — Preset browser: Save
+
+**Steps:** select some animated properties on a layer, click Save, save the
+preset into the current root.
+
+**Correct:** AE's own Save Animation Preset dialog opens, and after saving the
+list refreshes to include the new preset without reopening the panel.
+
+> Still a menu command (`findMenuCommandId("Save Animation Preset...") || 3075`)
+> because there is no scripting API for saving a preset. **This is the one
+> remaining locale-dependent call in the port** — on a localised install the
+> lookup fails and it falls through to the hardcoded 3075. Worth trying on a
+> localised AE if you have one; if 3075 is wrong there, nothing can be done
+> beyond telling the user.

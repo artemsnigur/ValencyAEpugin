@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { AutoTwixtor } from "./components/AutoTwixtor";
 import { DuplicateFrames } from "./components/DuplicateFrames";
 import { GraphEditor } from "./components/GraphEditor";
+import { PresetBrowser } from "./components/PresetBrowser";
 import { ProjectUtilities } from "./components/ProjectUtilities";
 import "./main.scss";
 
@@ -27,7 +28,7 @@ type Tab = {
 const TABS: Tab[] = [
   { id: "tab-twixtor", label: "Twixtor", step: "done" },
   { id: "tab-graph", label: "Graph", step: "done" },
-  { id: "tab-presets", label: "Presets", step: "step 06" },
+  { id: "tab-presets", label: "Presets", step: "done" },
   { id: "tab-render", label: "Render", step: "step 07" },
   { id: "tab-library", label: "Library", step: "step 08" },
   { id: "tab-theme", label: "Theme", iconOnly: true, step: "step 09" },
@@ -126,6 +127,8 @@ export const App = () => {
                 </>
               ) : tab.id === "tab-graph" ? (
                 <GraphEditor />
+              ) : tab.id === "tab-presets" ? (
+                <PresetBrowser />
               ) : tab.id === "tab-render" ? (
                 <ProjectUtilities />
               ) : (

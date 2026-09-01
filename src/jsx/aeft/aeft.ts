@@ -921,3 +921,143 @@ export var applyGraphToKeys = function (
       "Eased " + eased + (eased === 1 ? " keyframe pair." : " keyframe pairs."),
   };
 };
+
+// --- Presets -----------------------------------------------------------------
+
+/** Where a preset is applied. */
+export type PresetTarget = 0 | 1 | 2; // 0 adjustment, 1 solid, 2 selected layer
+/** How long the created layer runs. */
+export type PresetDuration = 0 | 1 | 2; // 0 match layer, 1 one frame, 2 custom
+
+/**
+ * Apply an animation preset.
+ *
+ * Targets 0 and 1 create a full-frame layer (adjustment or solid) above the
+ * selected one and apply the preset to it; target 2 applies to the selected
+ * layer directly.
+ *
+ * Ported from $.global.applyZxpPreset. Changes:
+ *  - the five arguments arrive typed instead of being parseInt'd from strings.
+ *  - the original opened its undo group after the "select a layer" guard but
+ *    returned from the no-comp guard before opening it, and never closed the
+ *    group on the throwing path because there was no try at all. Validation now
+ *    runs first and the group closes in a finally.
+ *  - guard messages are returned rather than alert()ed.
+ */
+export var applyPreset = function (
+  presetPath: string,
+  target: PresetTarget,
+  duration: PresetDuration,
+  customFrames: number,
+  layerColor: number
+): HostResult {
+  var comp = app.project.activeItem;
+  if (!comp || !(comp instanceof CompItem)) {
+    return { ok: false, message: "Select a composition first." };
+  }
+
+  var presetFile = new File(presetPath);
+  if (!presetFile.exists) {
+    return { ok: false, message: "Preset file not found: " + presetPath };
+  }
+
+  var selected = comp.selectedLayers.length > 0 ? comp.selectedLayers[0] : null;
+  if ((duration === 0 || target === 2) && !selected) {
+    return {
+      ok: false,
+      message:
+        target === 2
+          ? "Select a layer to apply the preset to."
+          : "Select a layer to match the duration against.",
+    };
+  }
+
+  var presetName = decodeURI(presetFile.name).replace(".ffx", "");
+  var failure = "";
+
+  app.beginUndoGroup("Apply Preset");
+  try {
+    var originalTime = comp.time;
+    var frameDur = comp.frameDuration;
+    var inT = comp.time;
+    var outT = comp.time + frameDur;
+
+    if (duration === 0 && selected) {
+      inT = selected.inPoint;
+      outT = selected.outPoint;
+    } else if (duration === 1) {
+      outT = inT + frameDur;
+    } else if (duration === 2) {
+      var frames = customFrames;
+      if (isNaN(frames) || frames <= 0) frames = 1;
+      outT = inT + frames * frameDur;
+    }
+
+    if (target === 0 || target === 1) {
+      var newLayer = comp.layers.addSolid(
+        [1, 1, 1],
+        (target === 0 ? "Adj: " : "Solid: ") + presetName,
+        comp.width,
+        comp.height,
+        comp.pixelAspect,
+        comp.duration
+      );
+      if (target === 0) {
+        newLayer.adjustmentLayer = true;
+      }
+      newLayer.label = layerColor;
+      newLayer.startTime = inT - newLayer.inPoint + newLayer.startTime;
+      newLayer.inPoint = inT;
+      newLayer.outPoint = outT;
+      if (selected) {
+        newLayer.moveBefore(selected);
+      }
+      // applyPreset lands on the layer at the current time, so the playhead is
+      // parked on the new layer's in point and restored afterwards.
+      comp.time = newLayer.inPoint;
+      newLayer.applyPreset(presetFile);
+      comp.time = originalTime;
+    } else {
+      comp.time = (selected as Layer).inPoint;
+      (selected as Layer).applyPreset(presetFile);
+      comp.time = originalTime;
+    }
+  } catch (e: any) {
+    failure = e && e.message ? e.message : "unknown error";
+  } finally {
+    app.endUndoGroup();
+  }
+
+  if (failure !== "") {
+    return { ok: false, message: "Apply preset failed: " + failure };
+  }
+  return {
+    ok: true,
+    message:
+      "Applied " +
+      presetName +
+      (target === 2 ? " to the selected layer." : target === 0 ? " on a new adjustment layer." : " on a new solid."),
+  };
+};
+
+/**
+ * Open After Effects' own Save Animation Preset dialog.
+ *
+ * Kept as a menu command deliberately: the docs expose no scripting API for
+ * saving a preset, so this is the only route. The lookup is by English label
+ * and finds nothing on a localised install, which is what the hardcoded 3075
+ * fallback is for - version-fragile, but the best available.
+ */
+export var savePresetDialog = function (): HostResult {
+  try {
+    app.executeCommand(app.findMenuCommandId("Save Animation Preset...") || 3075);
+  } catch (e: any) {
+    return {
+      ok: false,
+      message:
+        "Could not open the Save Animation Preset dialog: " +
+        (e && e.message ? e.message : "unknown error"),
+    };
+  }
+  return { ok: true, message: "" };
+};
