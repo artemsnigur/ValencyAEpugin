@@ -598,6 +598,42 @@ h3 {
   }
 }
 
+// A folder containing favourites gets a gold rim.
+.folder-has-favs {
+  border-color: rgba(255, 215, 0, 0.5) !important;
+  box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.1),
+    0 0 15px rgba(255, 215, 0, 0.2) !important;
+}
+
+.folder-has-favs .folder-icon {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+}
+
+// Grid fade on folder navigation. Both directions are the same fade in the
+// original; kept as two classes so a real directional transition can be added
+// without touching the call sites.
+.folder-transition-in {
+  animation: folderSlideIn 0.15s ease-out forwards;
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.folder-transition-out {
+  animation: folderSlideOut 0.15s ease-out forwards;
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+@keyframes folderSlideIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes folderSlideOut {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 .preset-icon {
   width: 85%;
   height: 85%;
@@ -803,7 +839,35 @@ h3 {
 .folder-row {
   display: flex;
   align-items: center;
+  border-radius: 8px;
   gap: 6px;
+
+  &.active-row {
+    background: rgba(0, 0, 0, 0.3);
+    position: relative;
+    border-color: transparent !important;
+    box-shadow: none;
+  }
+
+  // Gradient hairline on the selected destination, same masked technique as
+  // the checked toggle and the selected preset slot.
+  &.active-row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(
+      var(--grad-angle),
+      var(--grad-start),
+      var(--grad-end)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
 
 .folder-btn {
@@ -881,6 +945,14 @@ body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !im
   padding: 10px;
   margin-bottom: 8px;
   flex: none;
+}
+
+.theme-slot {
+  font-size: 10px !important;
+  padding: 0 2px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .theme-slot-grid {

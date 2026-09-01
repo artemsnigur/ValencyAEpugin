@@ -44,6 +44,9 @@ export const LibraryBrowser = () => {
   const [query, setQuery] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
   const [playing, setPlaying] = useState("");
+  // Re-keyed on every path change so the grid replays its fade, which is what
+  // triggerGridAnimation() did by removing and re-adding the class.
+  const [navKey, setNavKey] = useState(0);
   const { busy, result, run } = useHostAction();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -84,6 +87,7 @@ export const LibraryBrowser = () => {
   useEffect(() => {
     loadPath(active.path);
     setQuery("");
+    setNavKey((n) => n + 1);
   }, [active.path, loadPath]);
 
   const updateActiveTab = (patch: Partial<LibTab>) =>
@@ -287,7 +291,12 @@ export const LibraryBrowser = () => {
       </div>
 
       <div className="presets-scroll-area">
-        <div className={`library-grid${deleteMode ? " delete-mode-active" : ""}`}>
+        <div
+          key={navKey}
+          className={`library-grid folder-transition-in${
+            deleteMode ? " delete-mode-active" : ""
+          }`}
+        >
           {visible.folders.map((folder) => (
             <div
               key={folder.path}
@@ -297,7 +306,13 @@ export const LibraryBrowser = () => {
                 deleteMode ? hide(folder.path, atHome) : openFolder(folder)
               }
             >
-              <div className="lib-folder">
+              <div
+                className={`lib-folder${
+                  favourites.some((f) => f.indexOf(`${folder.path}/`) === 0)
+                    ? " folder-has-favs"
+                    : ""
+                }`}
+              >
                 <div
                   className={`lib-star${favourites.indexOf(folder.path) > -1 ? " active" : ""}`}
                   onClick={(e) => {
