@@ -29,7 +29,8 @@ export const BUILTIN_PRESETS: GraphPreset[] = [
   { name: "Sudden Drop", p1: { x: 0, y: 0 }, p2: { x: 100, y: 0 } },
 ];
 
-/** Same key the shipped panel uses, so favourites carry across. */
+/** Same key name the shipped panel uses. Separate origins most likely mean
+    separate stores, so this is format compatibility, not shared state. */
 export const FAVOURITES_KEY = "graph-favorites-sandbox";
 
 export const loadFavourites = (): GraphPreset[] => {

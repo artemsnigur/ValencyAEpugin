@@ -3,10 +3,11 @@ import { fs, path } from "../../lib/cep/node";
 export type PresetEntry = { name: string; path: string; folder: string };
 export type PresetFolder = { name: string; path: string };
 
-/** Same localStorage keys the shipped panel uses, so both share their state. */
+/** Same localStorage key names the shipped panel uses. Different extension
+    IDs mean different origins, so expect separate stores. */
 export const ROOT_KEY = "saved-preset-folder-path";
 export const FAVOURITES_KEY = "fav-presets";
-/** Written by the theme tab in step 09; read here with the shipped default. */
+/** Written by the theme tab; read here with the shipped panel's default. */
 export const LAYER_COLOUR_KEY = "layer-color";
 
 const posix = (p: string) => p.replace(/\\/g, "/");

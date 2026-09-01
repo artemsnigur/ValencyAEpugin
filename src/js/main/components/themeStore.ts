@@ -22,7 +22,8 @@ export type ThemeConfig = {
   bgTime: string;
 };
 
-/** Keys, all shared with the shipped panel. */
+/** Same key names the shipped panel uses - format compatibility, not shared
+    state; the two extensions have different origins. */
 export const K = {
   bgColor: "bg-color",
   gradStart: "grad-start",

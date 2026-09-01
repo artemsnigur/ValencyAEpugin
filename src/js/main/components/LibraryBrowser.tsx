@@ -44,6 +44,9 @@ export const LibraryBrowser = () => {
   const [query, setQuery] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
   const [playing, setPlaying] = useState("");
+  // Re-keyed on every path change so the grid replays its fade, which is what
+  // triggerGridAnimation() did by removing and re-adding the class.
+  const [navKey, setNavKey] = useState(0);
   const { busy, result, run } = useHostAction();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -84,6 +87,7 @@ export const LibraryBrowser = () => {
   useEffect(() => {
     loadPath(active.path);
     setQuery("");
+    setNavKey((n) => n + 1);
   }, [active.path, loadPath]);
 
   const updateActiveTab = (patch: Partial<LibTab>) =>
@@ -144,10 +148,23 @@ export const LibraryBrowser = () => {
     writeJSON(KEYS.favourites, next);
   };
 
-  const hide = (path: string) => {
+  /**
+   * Hide an item from the panel.
+   *
+   * Confirms first, as the original did - this destroys state with no visible
+   * undo. Hiding a root also removes it from the roots list, again matching
+   * the original.
+   */
+  const hide = (path: string, isRoot = false) => {
+    if (!confirm("Hide this item from the script?")) return;
     const next = hidden.concat(path);
     setHidden(next);
     writeJSON(KEYS.hidden, next);
+    if (isRoot) {
+      const remaining = roots.filter((r) => r.path !== path);
+      setRoots(remaining);
+      writeJSON(KEYS.roots, remaining);
+    }
   };
 
   const playAudio = (path: string) => {
@@ -242,9 +259,13 @@ export const LibraryBrowser = () => {
           className="outline-btn pop-anim lib-tool"
           title="Clear cache"
           onClick={() => {
-            const removed = clearCache(cacheFolder);
+            // Confirm before, not report after - the original asked first, and
+            // this deletes files with no undo.
+            if (cacheFolder === "") return alert("Cache folder is not set.");
+            if (!confirm("Are you sure you want to clear the library cache?")) return;
+            clearCache(cacheFolder);
+            alert("Cache cleared successfully!");
             loadPath(active.path);
-            alert(`Cleared ${removed} cached folder listing(s).`);
           }}
         >
           ⌫
@@ -270,15 +291,28 @@ export const LibraryBrowser = () => {
       </div>
 
       <div className="presets-scroll-area">
-        <div className={`library-grid${deleteMode ? " delete-mode-active" : ""}`}>
+        <div
+          key={navKey}
+          className={`library-grid folder-transition-in${
+            deleteMode ? " delete-mode-active" : ""
+          }`}
+        >
           {visible.folders.map((folder) => (
             <div
               key={folder.path}
               className={`lib-item-container pop-anim${deleteMode ? " delete-target" : ""}`}
               title={folder.name}
-              onClick={() => (deleteMode ? hide(folder.path) : openFolder(folder))}
+              onClick={() =>
+                deleteMode ? hide(folder.path, atHome) : openFolder(folder)
+              }
             >
-              <div className="lib-folder">
+              <div
+                className={`lib-folder${
+                  favourites.some((f) => f.indexOf(`${folder.path}/`) === 0)
+                    ? " folder-has-favs"
+                    : ""
+                }`}
+              >
                 <div
                   className={`lib-star${favourites.indexOf(folder.path) > -1 ? " active" : ""}`}
                   onClick={(e) => {

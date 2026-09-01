@@ -30,11 +30,22 @@ detail matters more than the pass.
 - Both panels can be installed at once — different extension IDs, both under
   Window > Extensions.
 
-**Shared state, deliberate** — the two panels share three stores, so a change in
-one shows up in the other. If an A/B comparison disagrees unexpectedly, check
-these before blaming the port: the Twixtor `.ffx` path (`app.settings`,
-section `AutoTwix`, key `presetPath`), graph favourites (`localStorage`,
-`graph-favorites-sandbox`), and the graph splitter height (`graph-top-height`).
+**Shared state** — *corrected after batch 2; see L0 in batch 3.* Only one of
+these is genuinely shared between the two panels:
+
+- **Shared:** the Twixtor `.ffx` path — `app.settings`, section `AutoTwix`, key
+  `presetPath`. That is After Effects state, not browser state, so both panels
+  read and write the same value. Changing the preset in one **does** change it
+  in the other.
+- **Probably not shared:** everything in `localStorage`, including graph
+  favourites (`graph-favorites-sandbox`) and the splitter height
+  (`graph-top-height`). The panels have different extension IDs and therefore
+  different origins. They use the same key *names*, in what are most likely
+  separate stores.
+
+So if an A/B comparison disagrees, the Twixtor preset path is the one worth
+checking first. A difference in favourites or panel layout between the two
+panels is expected, not a symptom.
 
 ---
 
@@ -259,8 +270,10 @@ see the note below. **A failure in apply** points at the argument order into
 `applyPreset`.
 
 > The root folder is remembered under `saved-preset-folder-path` and favourites
-> under `fav-presets` — **both the shipped panel's keys**, so the two panels
-> share them, same as the Twixtor path and graph favourites.
+> under `fav-presets` — the **same key names** the shipped panel uses. That was
+> originally described here as the two panels sharing state; see L0 in batch 3.
+> Same names, most likely separate stores, so **expect to pick the root folder
+> again in the new panel**. That is not a failure of the scan.
 
 > **Dropped: the `app.settings("PS_PRO", "presetRoot")` write.** Audited before
 > removing it, because `app.settings` lives in After Effects, survives
@@ -278,10 +291,14 @@ see the note below. **A failure in apply** points at the argument order into
 > `startZxpRender`).
 >
 > **Can the stale value and the new localStorage root disagree visibly? No.**
-> The shipped panel reads its root from localStorage too, never from
-> `app.settings`, and both panels share that key — so a folder picked in either
-> is seen by both. Existing users keep whatever stale value is already in
-> `PS_PRO/presetRoot`; nothing reads it, so nothing changes. The only
+> *(Reasoning corrected — the original said "both panels share that key", which
+> rests on the shared-localStorage assumption. See L0. The conclusion is
+> unchanged, and rests on something simpler.)* **Nothing reads
+> `PS_PRO/presetRoot` at all** — not the shipped panel, not this one. Each panel
+> reads its root from its own localStorage. A stale `app.settings` value is
+> therefore invisible to both regardless of whether the stores are shared.
+> Existing users keep whatever is already in `PS_PRO/presetRoot`; nothing reads
+> it, so nothing changes. The only
 > theoretical exposure is another extension using the same global section name,
 > which is a property of the original design and unaffected by dropping a write.
 >
@@ -304,8 +321,12 @@ The Layer Clr dropdown lives in the **theme tab**, which lands in step 09. Until
 then this reads `localStorage["layer-color"]` directly, defaulting to 1 (Red) —
 the same key and default the shipped panel uses.
 
-**Steps:** set Layer Clr in the **shipped** panel, then apply an Adj or Solid
-preset from the **new** panel.
+**Steps:** *(rewritten — the original version set this in the shipped panel,
+which only works if localStorage is shared. See L0.)* Set
+`localStorage["layer-color"]` in the **new** panel's DevTools console
+(`localhost:8860`) to a distinctive value such as `"9"`, then apply an Adj or
+Solid preset from that same panel. From step 09 onward the Theme tab's Layer
+Clr dropdown sets it for you, which is the better way to run this.
 
 **Correct:** the created layer takes that label colour. If it is always red,
 the key is not being read.
@@ -419,10 +440,14 @@ least one of them, a mix of video, image, audio and unsupported types.
 back. Open a second tab, navigate it somewhere else, switch between them, close
 one. Search. Star a folder and a file. Reopen the panel.
 
-**Correct:** matches the shipped panel — roots at Home, folders before files,
-favourites sorted first, tabs and breadcrumbs surviving a reload. Roots,
-favourites, hidden items, tabs and the cache folder all use the shipped panel's
-localStorage keys, so both panels see the same state.
+**Correct:** matches the shipped panel in *behaviour* — roots at Home, folders
+before files, favourites sorted first, tabs and breadcrumbs surviving a reload.
+
+Roots, favourites, hidden items, tabs and the cache folder use the same key
+*names* as the shipped panel, but see L0 in batch 3: the stores are most likely
+separate, so **you will need to add your roots and cache folder again in the new
+panel**. The listing cache files themselves *are* shared once both panels point
+at the same cache folder, since those are files on disk.
 
 **Watch the folder with several hundred files.** The listing scan moved from
 `cep.fs.readdir` plus an ExtendScript `Folder.getFiles()` round trip to a single
@@ -500,17 +525,27 @@ different gradient), then close and reopen the panel. Watch the first frame.
 default-then-yours flash. The shipped panel will still flash — that is the
 difference, not a fault.
 
-## [ ] 09 — Theme: slots are shared with the shipped panel
+## [ ] 09 — Theme: slot storage is format-compatible
 
-**Steps:** save a theme into slot 3 in the **shipped** panel, then open the new
-panel and click slot 3. Then the reverse. Rename a slot in one and check the
-other. Load a slot saved before this port existed, if you have one.
+*(Rewritten. This was written as "slots are shared with the shipped panel" and
+tested by saving in one and loading in the other — which only works if
+localStorage is shared. See L0 in batch 3.)*
 
-**Correct:** identical themes both ways, names carry across. Storage is
-byte-identical: `theme-slot-<N>` holds the same JSON with **every value as a
+What is actually guaranteed is the **format**, not the sharing: `theme-slot-<N>`
+holds the same JSON shape the shipped panel writes, with **every value as a
 string** (`radius: "12"`, not `12`), `theme-name-<N>` the display name,
-`last-active-slot` the id. A slot missing newer fields merges over the defaults
-rather than failing.
+`last-active-slot` the id.
+
+**Steps:** save a theme into slot 3, rename it, close and reopen the panel, load
+it. Then, in DevTools (`localhost:8860`), copy the raw `theme-slot-3` string out
+of the shipped panel's console and paste it into the new panel's, and load the
+slot.
+
+**Correct:** slots and names survive a reload within a panel. A slot string
+lifted from the shipped panel loads correctly, and one missing newer fields
+merges over the defaults rather than failing. **If the two panels turn out to
+share storage after all (L0), the copy step is unnecessary** and slots appear in
+both automatically.
 
 ## [ ] 09 — Theme: every control applies AND persists
 
@@ -550,3 +585,138 @@ Both ported faithfully and queued in POST-PARITY.md; **not** faults of the port.
   panel.
 
 **Correct:** they remember their value across a reload and change nothing else.
+
+---
+
+# Batch 3 (pending) — step 10, licensing
+
+**This batch touches real licence state on a live server.** Read the safety
+notes before starting. Runs L1–L3 are read-only; **L4 unbinds your licence** and
+is last on purpose.
+
+**Before you start:** confirm you can reach the Apps Script and rebind an
+account by hand. If L4 goes wrong you are locked out of your own product with no
+self-service path, because logout is the only unbind and it is HWID-gated.
+Do not run L4 without that escape hatch.
+
+## ✅ L0 — Do the two panels actually share localStorage? (do this first)
+
+**I have been assuming they do and never verified it. They probably do not.**
+CEP extensions have different extension IDs, so different origins, so separate
+`localStorage`. Everything in batches 1 and 2 that says "a favourite saved in
+one appears in the other" rests on this and may be wrong.
+
+**Steps:** in the **shipped** panel, save a theme into slot 5 and star a graph
+preset. Open the **new** panel and look at slot 5 and the favourites tab.
+
+**Correct:** whichever answer you get, record it — it changes how the rest of
+this batch reads.
+
+- **Not shared (expected):** the panels have independent settings. Every
+  "shared key" note in batches 1–2 is wrong and needs correcting; nothing else
+  changes, since both panels still read and write the *same key names* within
+  their own stores.
+- **Shared:** the earlier notes stand.
+
+**Either way, these three are genuinely shared** — they are filesystem or
+After Effects state, not browser state, so they are unaffected by origin:
+
+| Shared thing | Where |
+|---|---|
+| Twixtor `.ffx` path | `app.settings`, section `AutoTwix` |
+| Machine identity | `~/Documents/AutoEditPro/sys_id.txt` |
+| Library listing cache | `cache_*.json` in the chosen cache folder |
+
+**The middle one is why this batch has no isolation.** Both panels compute the
+same HWID from the same file, so they act on the *same server-side binding*. A
+logout from either unbinds both.
+
+## [ ] L1 — Unconfigured build fails closed 🛑 · no server contact
+
+**Steps:** with **no `.env` present**, run `yarn build` and open the panel.
+
+**Correct:** the panel shows "Licensing not configured — copy `.env.example` to
+`.env` and rebuild", not a login form. Nothing is sent anywhere. Check the
+DevTools network tab at `localhost:8860` to confirm zero requests.
+
+**A failure means** the placeholder guard is not matching — the build would
+otherwise fetch `undefined?email=…`, which surfaces as a timeout
+indistinguishable from the server being down.
+
+## [ ] L2 — Configured build, activation 🛑 · writes server state (low risk)
+
+**Steps:** copy `.env.example` to `.env`, fill in the real endpoint and key,
+`yarn build`. Open the panel — the activation overlay should appear. Try, in
+order: an email with no `@`; a valid email with an empty password; a valid
+email with the **wrong** password; then your real credentials.
+
+**Correct:** "Please enter a valid Email." / "Please enter a password." — both
+local, no request. Then "Wrong Password." from the server. Then activation
+succeeds, the overlay disappears, and the Theme tab shows your licence
+truncated to 15 characters.
+
+**Server state:** activation binds the HWID to your account. Because
+`sys_id.txt` is shared, the HWID should be **identical** to the one the shipped
+panel already registered, making this a no-op rebind. If you get
+"License is bound to another PC" on your own machine, stop — that means the
+HWID differs between panels, which is itself the finding, and see
+`LICENSING-HWID.md`.
+
+**A failure in the wrong-password step** points at the reply-string mapping;
+**a timeout** points at the endpoint value in `.env`.
+
+## [ ] L3 — Silent recheck ⚠️ · read-only
+
+Runs ~2 seconds after the panel opens, and only reports back when the server
+says the session is invalid.
+
+**Steps:** with a valid activation, close and reopen the panel and watch the
+network tab for the `action=silent_check` request.
+
+**Correct:** one request, reply `OK` or similar, **no dialog**. The panel stays
+unlocked.
+
+**Then the negative case, if you can arrange it safely:** temporarily edit
+`~/Documents/AutoEditPro/sys_id.txt` to a different value and reopen.
+
+**Correct:** the panel clears the saved licence, shows "Security Alert: Your
+session has expired…" and returns to the activation overlay. **Restore the file
+afterwards** — with the original value back, activation should work again
+without touching the server.
+
+> This is also a live demonstration of the flaw in `LICENSING-HWID.md`: a text
+> edit changes the machine's identity. That is the point, not a bug in the port.
+
+## [ ] L4 — Logout 🛑 · **DESTRUCTIVE — unbinds your licence**
+
+**Do this last, and only with the Apps Script escape hatch confirmed.**
+
+**Steps:** Theme tab → Log Out → confirm. Then immediately re-activate with your
+credentials.
+
+**Correct:** the confirm dialog matches the original's wording, the request goes
+out with `action=logout`, the saved licence is cleared, the activation overlay
+returns — and **re-activation succeeds**.
+
+**If re-activation fails**, you have hit the trap described in
+`LICENSING-HWID.md`: logout sends the current HWID and the server may have
+unbound against a different one. Rebind by hand in the Apps Script and record
+exactly what the server had stored — that is the data the migration design
+needs.
+
+**Note:** logout carries no password, only email + HWID + shared key. That is
+the original's behaviour, ported unchanged, and is the second half of the
+device-binding problem.
+
+## [ ] L5 — Update check ⚠️ · read-only, unauthenticated
+
+`checkUpdate()` is implemented but **nothing calls it** — the update-required
+overlay is deliberately not wired, because `__APP_VERSION__` is now 1.5.0 while
+the server knows about 1.4.0, and wiring it would risk locking the panel out of
+itself.
+
+**Steps:** nothing to click. If you want to see the reply, call it from the
+DevTools console.
+
+**Correct:** returns the server's version string. Note what it says — it feeds
+the post-parity decision about what a version mismatch should do to the user.

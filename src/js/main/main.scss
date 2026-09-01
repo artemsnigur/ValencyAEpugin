@@ -360,6 +360,7 @@ h3 {
 .offset-btn {
   height: 32px;
   flex: 1;
+  flex-shrink: 0;
   background: transparent;
   border: none;
   color: var(--text-color);
@@ -598,6 +599,42 @@ h3 {
   }
 }
 
+// A folder containing favourites gets a gold rim.
+.folder-has-favs {
+  border-color: rgba(255, 215, 0, 0.5) !important;
+  box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.1),
+    0 0 15px rgba(255, 215, 0, 0.2) !important;
+}
+
+.folder-has-favs .folder-icon {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+}
+
+// Grid fade on folder navigation. Both directions are the same fade in the
+// original; kept as two classes so a real directional transition can be added
+// without touching the call sites.
+.folder-transition-in {
+  animation: folderSlideIn 0.15s ease-out forwards;
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.folder-transition-out {
+  animation: folderSlideOut 0.15s ease-out forwards;
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+@keyframes folderSlideIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes folderSlideOut {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 .preset-icon {
   width: 85%;
   height: 85%;
@@ -786,16 +823,22 @@ h3 {
 
 .select-separator {
   font-size: 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: transparent;
 }
 
 .dest-folders {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 10px;
+  flex-shrink: 0;
   transition: opacity 0.2s ease;
 
   &.disabled {
-    opacity: 0.35;
+    opacity: 0.25;
     pointer-events: none;
   }
 }
@@ -803,19 +846,53 @@ h3 {
 .folder-row {
   display: flex;
   align-items: center;
+  border-radius: 8px;
   gap: 6px;
+
+  &.active-row {
+    background: rgba(0, 0, 0, 0.3);
+    position: relative;
+    border-color: transparent !important;
+    box-shadow: none;
+  }
+
+  // Gradient hairline on the selected destination, same masked technique as
+  // the checked toggle and the selected preset slot.
+  &.active-row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(
+      var(--grad-angle),
+      var(--grad-start),
+      var(--grad-end)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
 
 .folder-btn {
   flex: 0 0 32px;
-  padding: 0;
+  min-width: 32px;
   height: 28px;
+  border-radius: 6px;
+  padding: 0;
 }
 
 .path-text {
+  font-size: 11px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
+  text-align: left !important;
 }
 
 
@@ -883,6 +960,14 @@ body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !im
   flex: none;
 }
 
+.theme-slot {
+  font-size: 10px !important;
+  padding: 0 2px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .theme-slot-grid {
   grid-template-columns: 1fr 1fr 1fr;
   margin-bottom: 5px;
@@ -894,10 +979,23 @@ body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !im
   border-style: dashed;
 }
 
-.outline-btn.action-active {
-  background: rgba(255, 255, 255, 0.13);
-  border-color: var(--grad-start);
-  border-style: solid;
+// Matches the original's .action-active exactly - it was redefined during the
+// theme port without the !important flags or the box-shadow reset, and scoped
+// to .outline-btn, which changed its specificity.
+.action-active {
+  background: rgba(255, 255, 255, 0.13) !important;
+  border-color: var(--grad-start) !important;
+  border-style: solid !important;
+  box-shadow: none !important;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 input[type="color"] {
@@ -1000,4 +1098,25 @@ input[type="range"] {
   opacity: 0.4;
   font-size: 9px;
   margin-top: 4px;
+}
+
+// Visible whenever VITE_LICENSE_BYPASS is on, so a dev build is never mistaken
+// for a licensed one. Deliberately loud.
+.bypass-marker {
+  flex-shrink: 0;
+  margin-bottom: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(246, 213, 92, 0.22) 0 8px,
+    rgba(246, 213, 92, 0.1) 8px 16px
+  );
+  border: 1px solid rgba(246, 213, 92, 0.55);
+  color: #f6d55c;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
 }

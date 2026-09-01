@@ -1,0 +1,37 @@
+#!/bin/sh
+# Refuse any commit whose staged content carries licensing credentials.
+#
+# This repository is public. The endpoint and shared key live only in .env,
+# which is gitignored - this is the backstop for the case where that pattern
+# stops matching, or someone commits a file that quotes the values.
+#
+# Patterns are written as regexes rather than literals so this file does not
+# trip its own check. Install with:
+#   git config core.hooksPath .githooks
+
+KEY_RE='6_7x0A[0-9]_32P'
+DEPLOY_RE='AKfycb[a-zA-Z0-9]'
+
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^\.githooks/pre-commit$')
+[ -z "$staged" ] && exit 0
+
+# 1. A .env file being committed at all (any depth). .env.example is allowed.
+env_files=$(printf '%s\n' "$staged" | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$')
+if [ -n "$env_files" ]; then
+  echo "pre-commit: refusing - these are environment files and must not be committed:"
+  printf '  %s\n' $env_files
+  exit 1
+fi
+
+# 2. The credential values themselves, anywhere in the staged content.
+hits=$(git diff --cached -U0 -- $staged | grep -nE "$KEY_RE|$DEPLOY_RE")
+if [ -n "$hits" ]; then
+  echo "pre-commit: refusing - staged changes contain licensing credentials:"
+  printf '%s\n' "$hits" | head -20
+  echo
+  echo "The endpoint and shared key belong in .env only. If this is a false"
+  echo "positive, commit with --no-verify and say why in the commit body."
+  exit 1
+fi
+
+exit 0
