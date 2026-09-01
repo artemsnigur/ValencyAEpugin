@@ -822,16 +822,22 @@ h3 {
 
 .select-separator {
   font-size: 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: transparent;
 }
 
 .dest-folders {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 10px;
+  flex-shrink: 0;
   transition: opacity 0.2s ease;
 
   &.disabled {
-    opacity: 0.35;
+    opacity: 0.25;
     pointer-events: none;
   }
 }
@@ -872,14 +878,20 @@ h3 {
 
 .folder-btn {
   flex: 0 0 32px;
-  padding: 0;
+  min-width: 32px;
   height: 28px;
+  border-radius: 6px;
+  padding: 0;
 }
 
 .path-text {
+  font-size: 11px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
+  text-align: left !important;
 }
 
 
@@ -966,10 +978,14 @@ body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !im
   border-style: dashed;
 }
 
-.outline-btn.action-active {
-  background: rgba(255, 255, 255, 0.13);
-  border-color: var(--grad-start);
-  border-style: solid;
+// Matches the original's .action-active exactly - it was redefined during the
+// theme port without the !important flags or the box-shadow reset, and scoped
+// to .outline-btn, which changed its specificity.
+.action-active {
+  background: rgba(255, 255, 255, 0.13) !important;
+  border-color: var(--grad-start) !important;
+  border-style: solid !important;
+  box-shadow: none !important;
 }
 
 input[type="color"] {
