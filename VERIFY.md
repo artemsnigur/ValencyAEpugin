@@ -90,3 +90,56 @@ selected; a selection containing only locked or null layers.
 composition first." / "Select one or more layers first." / "No eligible
 layers…"), no `alert()` dialog, and **no stray "Run Duplicate Frame Remover"
 entry in Edit > Undo History**.
+
+---
+
+## [ ] 03 — Align (stretchAndSnap)
+
+**Steps:** layer with time-remap keys at non-frame-aligned times. Note its in
+point, then click Align.
+
+**Correct result:** stretch becomes 50%, the in point has **not** moved, every
+key sits on a whole frame, and keys that landed on the same frame collapsed to
+one. Message reports layers aligned and keys collapsed. Single Cmd+Z restores
+everything including the stretch.
+
+## [ ] 03 — Del KF (removeKeyframes)
+
+**Steps:** layer with time remap enabled. Select some keys **in the timeline**,
+then click Del KF.
+
+**Correct result:** selected keys gone, remaining keys re-spaced one frame apart
+starting at the original first key time, outPoint pulled in to match. Message
+reports the count. Single Cmd+Z.
+
+**Also:** click Del KF with no keys selected. Expect "No time-remap keyframes
+selected." and no undo entry — the original returned silently here.
+
+## [ ] 03 — Remove Unused Footage
+
+Behaviour change: the original called
+`app.executeCommand(app.findMenuCommandId("Remove Unused Footage"))` with no
+undo group. It is now `app.project.removeUnusedFootage()`, which the docs
+define as the same command, wrapped in an undo group and returning a count.
+
+**Steps:** project with at least one imported item used in no comp. Click
+Remove Unused Footage.
+
+**Correct result:** exactly the same items disappear as when running
+File > Remove Unused Footage by hand. Message reports the count. **Single Cmd+Z
+brings them back** — this is new; the original left no undo group of its own.
+
+**Worth testing on a non-English AE if you have one** — that is the case the
+old menu lookup failed on and the reason for the change.
+
+## [ ] 03 — Organize
+
+**Steps:** project with loose root-level items of several kinds — a comp, a
+solid, a video, an audio file, an image, and something with an unrecognised
+extension. Click Organize.
+
+**Correct result:** items sorted into Pre-comps / Solids / Video Files /
+Audio Files / Image Files / Other Files, existing folders of those names reused
+rather than duplicated, nested items untouched. Single Cmd+Z restores the flat
+layout — the original leaked the undo group whenever the move loop threw, so
+confirm the group closes cleanly.

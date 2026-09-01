@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { DuplicateFrames } from "./components/DuplicateFrames";
+import { ProjectUtilities } from "./components/ProjectUtilities";
 import "./main.scss";
 
 type TabId =
@@ -22,7 +23,7 @@ type Tab = {
 // Order is taken verbatim from AutoEditRestored/index.html and must not change
 // until parity is reached - reordering is its own commit afterwards.
 const TABS: Tab[] = [
-  { id: "tab-twixtor", label: "Twixtor", step: "steps 03-04" },
+  { id: "tab-twixtor", label: "Twixtor", step: "step 04" },
   { id: "tab-graph", label: "Graph", step: "step 05" },
   { id: "tab-presets", label: "Presets", step: "step 06" },
   { id: "tab-render", label: "Render", step: "step 07" },
@@ -118,6 +119,8 @@ export const App = () => {
             <div key={tab.id} id={tab.id} className="tab-content">
               {tab.id === "tab-twixtor" ? (
                 <DuplicateFrames />
+              ) : tab.id === "tab-render" ? (
+                <ProjectUtilities />
               ) : (
                 <p className="tab-placeholder">
                   {tab.label}

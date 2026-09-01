@@ -1,46 +1,43 @@
 import { useState } from "react";
 import { evalTS } from "../../lib/utils/bolt";
+import { useHostAction } from "./useHostAction";
 
 /**
- * Duplicate Frames Remover.
+ * Duplicate Frames Remover: Analyze / Del KF / Align.
  *
  * Ported from the first panel of #tab-twixtor in AutoEditRestored/index.html.
- * The "Del KF" and "Align" buttons that share this panel land in step 03.
  */
 export const DuplicateFrames = () => {
   const [lowMovement, setLowMovement] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(
-    null
-  );
-
-  const analyze = () => {
-    if (busy) return;
-    setBusy(true);
-    setResult(null);
-
-    // evalScript is callback-based and crosses to another process, so the
-    // panel keeps painting while After Effects itself is blocked executing the
-    // script. That is why the busy state below renders at all.
-    evalTS("analyzeDuplicates", lowMovement)
-      .then((res) => setResult(res))
-      .catch((e) => {
-        setResult({
-          ok: false,
-          message:
-            typeof e === "string" ? e : e?.message || "Unknown host error.",
-        });
-      })
-      .then(() => setBusy(false));
-  };
+  const { busy, result, run } = useHostAction();
 
   return (
     <div className="panel">
       <h3>Duplicate Frames Remover</h3>
 
       <div className="flex-buttons">
-        <button className="outline-btn pop-anim" onClick={analyze} disabled={busy}>
-          {busy ? "Analyzing…" : "Analyze"}
+        <button
+          className="outline-btn pop-anim"
+          onClick={() =>
+            run("analyze", () => evalTS("analyzeDuplicates", lowMovement))
+          }
+          disabled={busy !== null}
+        >
+          {busy === "analyze" ? "Analyzing…" : "Analyze"}
+        </button>
+        <button
+          className="outline-btn pop-anim"
+          onClick={() => run("delkf", () => evalTS("removeKeyframes"))}
+          disabled={busy !== null}
+        >
+          {busy === "delkf" ? "Removing…" : "Del KF"}
+        </button>
+        <button
+          className="outline-btn pop-anim"
+          onClick={() => run("align", () => evalTS("stretchAndSnap"))}
+          disabled={busy !== null}
+        >
+          {busy === "align" ? "Aligning…" : "Align"}
         </button>
       </div>
 
@@ -52,7 +49,7 @@ export const DuplicateFrames = () => {
       <p className={`panel-note${busy ? " is-active" : ""}`}>
         {busy
           ? "Working — After Effects is frozen. Don't quit, it will come back."
-          : "After Effects freezes while this runs. Long layers take a while."}
+          : "After Effects freezes while these run. Long layers take a while."}
       </p>
 
       <div className="custom-toggles flex-col">
