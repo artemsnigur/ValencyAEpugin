@@ -8,7 +8,13 @@ import { RenderQueue } from "./components/RenderQueue";
 import { ThemePanel } from "./components/ThemePanel";
 import { LoginOverlay } from "./components/LoginOverlay";
 import { LicensePanel } from "./components/LicensePanel";
-import { KEYS as LICENSE_KEYS, isConfigured, getHWID, silentCheck } from "./components/licenseStore";
+import {
+  KEYS as LICENSE_KEYS,
+  getHWID,
+  isBypassed,
+  isConfigured,
+  silentCheck,
+} from "./components/licenseStore";
 import { ProjectUtilities } from "./components/ProjectUtilities";
 import "./main.scss";
 
@@ -69,7 +75,7 @@ export const App = () => {
   // Revalidate shortly after open, as the shipped panel did. A reply only comes
   // back when the server says the session is no longer valid.
   useEffect(() => {
-    if (!licenseKey || !isConfigured()) return;
+    if (isBypassed() || !licenseKey || !isConfigured()) return;
     const timer = setTimeout(() => {
       silentCheck(licenseKey, getHWID()).then((reply) => {
         if (!reply) return;
@@ -126,7 +132,7 @@ export const App = () => {
     return () => observer.disconnect();
   }, [positionIndicator]);
 
-  if (!licenseKey) {
+  if (!licenseKey && !isBypassed()) {
     return (
       <LoginOverlay
         onActivated={() =>
@@ -138,6 +144,11 @@ export const App = () => {
 
   return (
     <>
+      {isBypassed() && (
+        <div className="bypass-marker" role="status">
+          licensing bypassed (dev build)
+        </div>
+      )}
       <div className="nav-bar" ref={navRef}>
         <div className="active-bg" ref={indicatorRef} />
         {TABS.map((tab) => (

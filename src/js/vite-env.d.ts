@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_LICENSE_ENDPOINT?: string;
   readonly VITE_LICENSE_KEY?: string;
+  readonly VITE_LICENSE_BYPASS?: string;
 }
 
 interface ImportMeta {

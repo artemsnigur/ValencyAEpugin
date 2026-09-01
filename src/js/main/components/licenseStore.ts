@@ -25,6 +25,16 @@ const configured = (value: string) =>
 export const isConfigured = () => configured(ENDPOINT) && configured(SHARED_KEY);
 
 /**
+ * Dev-only bypass of the activation gate.
+ *
+ * Off unless VITE_LICENSE_BYPASS is exactly "true". Vite replaces this at build
+ * time, so a build without the flag contains no bypass code at all - the branch
+ * and its marker are eliminated entirely. `yarn zxp` also refuses to package a
+ * build with it set; see scripts/check-release.mjs.
+ */
+export const isBypassed = () => import.meta.env.VITE_LICENSE_BYPASS === "true";
+
+/**
  * Machine identifier.
  *
  * Ported faithfully from getHWID() in AutoEditRestored/main.js:1468, flaw
