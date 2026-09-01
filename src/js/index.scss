@@ -66,9 +66,10 @@ body::after {
   min-height: 0;
 }
 
+// Values are the original's. The port had inherited the bolt-cep scaffold's
+// 10px bar and token-driven thumb, which was drift rather than a decision.
 ::-webkit-scrollbar {
-  width: 10px;
-  -webkit-appearance: always;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -76,6 +77,6 @@ body::after {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--panel-bg);
-  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
 }
