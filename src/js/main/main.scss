@@ -1120,3 +1120,14 @@ input[type="range"] {
   text-transform: uppercase;
   text-align: center;
 }
+
+// Cache controls carry text labels, not icons. Both touch the cache and one
+// deletes files - an unlabelled glyph is the wrong thing to put next to a
+// destructive action, and cache setup is a first-run task where nobody hovers.
+// The toolbar wraps to a second row rather than shrinking them.
+.outline-btn.lib-tool-text {
+  flex: 0 0 auto;
+  padding: 0 10px;
+  font-size: 10px;
+  white-space: nowrap;
+}

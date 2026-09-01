@@ -1055,8 +1055,7 @@ export var savePresetDialog = function (): HostResult {
     return {
       ok: false,
       message:
-        "Could not open the Save Animation Preset dialog: " +
-        (e && e.message ? e.message : "unknown error"),
+        "Save preset failed: " + (e && e.message ? e.message : "unknown error"),
     };
   }
   return { ok: true, message: "" };

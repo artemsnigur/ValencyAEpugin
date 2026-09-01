@@ -252,12 +252,14 @@ export const LibraryBrowser = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button className="outline-btn pop-anim lib-tool" title="Set cache folder" onClick={pickCacheFolder}>
-          ⛁
+        <button
+          className="outline-btn pop-anim lib-tool-text"
+          onClick={pickCacheFolder}
+        >
+          Cache Folder
         </button>
         <button
-          className="outline-btn pop-anim lib-tool"
-          title="Clear cache"
+          className="outline-btn pop-anim lib-tool-text"
           onClick={() => {
             // Confirm before, not report after - the original asked first, and
             // this deletes files with no undo.
@@ -268,7 +270,7 @@ export const LibraryBrowser = () => {
             loadPath(active.path);
           }}
         >
-          ⌫
+          Clear Cache
         </button>
         <button
           className={`outline-btn pop-anim lib-tool${deleteMode ? " active-tab" : ""}`}
