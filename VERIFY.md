@@ -30,11 +30,22 @@ detail matters more than the pass.
 - Both panels can be installed at once — different extension IDs, both under
   Window > Extensions.
 
-**Shared state, deliberate** — the two panels share three stores, so a change in
-one shows up in the other. If an A/B comparison disagrees unexpectedly, check
-these before blaming the port: the Twixtor `.ffx` path (`app.settings`,
-section `AutoTwix`, key `presetPath`), graph favourites (`localStorage`,
-`graph-favorites-sandbox`), and the graph splitter height (`graph-top-height`).
+**Shared state** — *corrected after batch 2; see L0 in batch 3.* Only one of
+these is genuinely shared between the two panels:
+
+- **Shared:** the Twixtor `.ffx` path — `app.settings`, section `AutoTwix`, key
+  `presetPath`. That is After Effects state, not browser state, so both panels
+  read and write the same value. Changing the preset in one **does** change it
+  in the other.
+- **Probably not shared:** everything in `localStorage`, including graph
+  favourites (`graph-favorites-sandbox`) and the splitter height
+  (`graph-top-height`). The panels have different extension IDs and therefore
+  different origins. They use the same key *names*, in what are most likely
+  separate stores.
+
+So if an A/B comparison disagrees, the Twixtor preset path is the one worth
+checking first. A difference in favourites or panel layout between the two
+panels is expected, not a symptom.
 
 ---
 
@@ -259,8 +270,10 @@ see the note below. **A failure in apply** points at the argument order into
 `applyPreset`.
 
 > The root folder is remembered under `saved-preset-folder-path` and favourites
-> under `fav-presets` — **both the shipped panel's keys**, so the two panels
-> share them, same as the Twixtor path and graph favourites.
+> under `fav-presets` — the **same key names** the shipped panel uses. That was
+> originally described here as the two panels sharing state; see L0 in batch 3.
+> Same names, most likely separate stores, so **expect to pick the root folder
+> again in the new panel**. That is not a failure of the scan.
 
 > **Dropped: the `app.settings("PS_PRO", "presetRoot")` write.** Audited before
 > removing it, because `app.settings` lives in After Effects, survives
@@ -278,10 +291,14 @@ see the note below. **A failure in apply** points at the argument order into
 > `startZxpRender`).
 >
 > **Can the stale value and the new localStorage root disagree visibly? No.**
-> The shipped panel reads its root from localStorage too, never from
-> `app.settings`, and both panels share that key — so a folder picked in either
-> is seen by both. Existing users keep whatever stale value is already in
-> `PS_PRO/presetRoot`; nothing reads it, so nothing changes. The only
+> *(Reasoning corrected — the original said "both panels share that key", which
+> rests on the shared-localStorage assumption. See L0. The conclusion is
+> unchanged, and rests on something simpler.)* **Nothing reads
+> `PS_PRO/presetRoot` at all** — not the shipped panel, not this one. Each panel
+> reads its root from its own localStorage. A stale `app.settings` value is
+> therefore invisible to both regardless of whether the stores are shared.
+> Existing users keep whatever is already in `PS_PRO/presetRoot`; nothing reads
+> it, so nothing changes. The only
 > theoretical exposure is another extension using the same global section name,
 > which is a property of the original design and unaffected by dropping a write.
 >
@@ -304,8 +321,12 @@ The Layer Clr dropdown lives in the **theme tab**, which lands in step 09. Until
 then this reads `localStorage["layer-color"]` directly, defaulting to 1 (Red) —
 the same key and default the shipped panel uses.
 
-**Steps:** set Layer Clr in the **shipped** panel, then apply an Adj or Solid
-preset from the **new** panel.
+**Steps:** *(rewritten — the original version set this in the shipped panel,
+which only works if localStorage is shared. See L0.)* Set
+`localStorage["layer-color"]` in the **new** panel's DevTools console
+(`localhost:8860`) to a distinctive value such as `"9"`, then apply an Adj or
+Solid preset from that same panel. From step 09 onward the Theme tab's Layer
+Clr dropdown sets it for you, which is the better way to run this.
 
 **Correct:** the created layer takes that label colour. If it is always red,
 the key is not being read.
@@ -419,10 +440,14 @@ least one of them, a mix of video, image, audio and unsupported types.
 back. Open a second tab, navigate it somewhere else, switch between them, close
 one. Search. Star a folder and a file. Reopen the panel.
 
-**Correct:** matches the shipped panel — roots at Home, folders before files,
-favourites sorted first, tabs and breadcrumbs surviving a reload. Roots,
-favourites, hidden items, tabs and the cache folder all use the shipped panel's
-localStorage keys, so both panels see the same state.
+**Correct:** matches the shipped panel in *behaviour* — roots at Home, folders
+before files, favourites sorted first, tabs and breadcrumbs surviving a reload.
+
+Roots, favourites, hidden items, tabs and the cache folder use the same key
+*names* as the shipped panel, but see L0 in batch 3: the stores are most likely
+separate, so **you will need to add your roots and cache folder again in the new
+panel**. The listing cache files themselves *are* shared once both panels point
+at the same cache folder, since those are files on disk.
 
 **Watch the folder with several hundred files.** The listing scan moved from
 `cep.fs.readdir` plus an ExtendScript `Folder.getFiles()` round trip to a single
@@ -500,17 +525,27 @@ different gradient), then close and reopen the panel. Watch the first frame.
 default-then-yours flash. The shipped panel will still flash — that is the
 difference, not a fault.
 
-## [ ] 09 — Theme: slots are shared with the shipped panel
+## [ ] 09 — Theme: slot storage is format-compatible
 
-**Steps:** save a theme into slot 3 in the **shipped** panel, then open the new
-panel and click slot 3. Then the reverse. Rename a slot in one and check the
-other. Load a slot saved before this port existed, if you have one.
+*(Rewritten. This was written as "slots are shared with the shipped panel" and
+tested by saving in one and loading in the other — which only works if
+localStorage is shared. See L0 in batch 3.)*
 
-**Correct:** identical themes both ways, names carry across. Storage is
-byte-identical: `theme-slot-<N>` holds the same JSON with **every value as a
+What is actually guaranteed is the **format**, not the sharing: `theme-slot-<N>`
+holds the same JSON shape the shipped panel writes, with **every value as a
 string** (`radius: "12"`, not `12`), `theme-name-<N>` the display name,
-`last-active-slot` the id. A slot missing newer fields merges over the defaults
-rather than failing.
+`last-active-slot` the id.
+
+**Steps:** save a theme into slot 3, rename it, close and reopen the panel, load
+it. Then, in DevTools (`localhost:8860`), copy the raw `theme-slot-3` string out
+of the shipped panel's console and paste it into the new panel's, and load the
+slot.
+
+**Correct:** slots and names survive a reload within a panel. A slot string
+lifted from the shipped panel loads correctly, and one missing newer fields
+merges over the defaults rather than failing. **If the two panels turn out to
+share storage after all (L0), the copy step is unnecessary** and slots appear in
+both automatically.
 
 ## [ ] 09 — Theme: every control applies AND persists
 

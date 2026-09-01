@@ -9,7 +9,8 @@ export type LibTab = {
   breadcrumbs: LibEntry[];
 };
 
-/** All shared with the shipped panel. */
+/** Same key names as the shipped panel; separate origins, separate stores.
+    The cache *files* on disk are genuinely shared - see cachePathFor. */
 export const KEYS = {
   roots: "lib-roots",
   favourites: "lib-favs",
@@ -38,8 +39,9 @@ export const AUDIO_EXTS = ["mp3", "wav", "m4a", "aac", "flac", "aif", "aiff"];
 const posix = (p: string) => p.replace(/\\/g, "/");
 
 /**
- * The shipped panel's cache-filename hash, kept bit-identical so both panels
- * share one listing cache while they are installed side by side.
+ * The shipped panel's cache-filename hash, kept bit-identical. Unlike the
+ * localStorage keys, this genuinely is shared: the cache is files on disk, so
+ * both panels read one another's listings once pointed at the same folder.
  */
 export const hashString = (input: string) => {
   let hash = 0;

@@ -1,6 +1,6 @@
 import { csi } from "../../lib/utils/bolt";
 
-/** All shared with the shipped panel. */
+/** Same key names as the shipped panel; separate origins, separate stores. */
 export const KEYS = {
   favouriteTemplates: "fav-render-templates",
   lastTemplate: "last-render-template",

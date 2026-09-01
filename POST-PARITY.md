@@ -61,8 +61,9 @@ deletions and renames are caught; **a file overwritten in place is not**, so a
 re-rendered clip goes on showing its old preview indefinitely.
 
 Fix: store `mtimeMs` per entry alongside the name and compare that too. The
-cache format is shared with the shipped panel, so either bump the cache
-filename prefix or make the extra field optional so an old cache still parses.
+cache format is shared with the shipped panel - genuinely so, since the cache is
+files on disk rather than localStorage - so either bump the cache filename
+prefix or make the extra field optional so an old cache still parses.
 
 ## 5. Library cards: surface load failures
 
