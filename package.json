@@ -1,17 +1,18 @@
 {
   "name": "com.valency.aepanel",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "watch": "tsc && vite build --watch true",
     "build": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && vite build --watch false",
-    "zxp": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZXP_PACKAGE=true vite build --watch false",
-    "zip": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZIP_PACKAGE=true vite build --watch false",
+    "zxp": "npm run check-release && rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZXP_PACKAGE=true vite build --watch false",
+    "zip": "npm run check-release && rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZIP_PACKAGE=true vite build --watch false",
     "serve": "cross-env SERVE_PANEL=true vite preview",
     "symlink": "cross-env BOLT_ACTION=symlink vite",
-    "delsymlink": "cross-env BOLT_ACTION=delsymlink vite"
+    "delsymlink": "cross-env BOLT_ACTION=delsymlink vite",
+    "check-release": "node scripts/check-release.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

@@ -6,6 +6,15 @@ import { LibraryBrowser } from "./components/LibraryBrowser";
 import { PresetBrowser } from "./components/PresetBrowser";
 import { RenderQueue } from "./components/RenderQueue";
 import { ThemePanel } from "./components/ThemePanel";
+import { LoginOverlay } from "./components/LoginOverlay";
+import { LicensePanel } from "./components/LicensePanel";
+import {
+  KEYS as LICENSE_KEYS,
+  getHWID,
+  isBypassed,
+  isConfigured,
+  silentCheck,
+} from "./components/licenseStore";
 import { ProjectUtilities } from "./components/ProjectUtilities";
 import "./main.scss";
 
@@ -37,6 +46,9 @@ const TABS: Tab[] = [
   { id: "tab-theme", label: "Theme", iconOnly: true, step: "done" },
 ];
 
+/** Injected from package.json at build time rather than hardcoded. */
+const APP_VERSION = __APP_VERSION__;
+
 const GearIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -56,6 +68,32 @@ const GearIcon = () => (
 
 export const App = () => {
   const [activeTab, setActiveTab] = useState<TabId>(TABS[0].id);
+  const [licenseKey, setLicenseKey] = useState(
+    () => localStorage.getItem(LICENSE_KEYS.savedKey) || ""
+  );
+
+  // Revalidate shortly after open, as the shipped panel did. A reply only comes
+  // back when the server says the session is no longer valid.
+  useEffect(() => {
+    if (isBypassed() || !licenseKey || !isConfigured()) return;
+    const timer = setTimeout(() => {
+      silentCheck(licenseKey, getHWID()).then((reply) => {
+        if (!reply) return;
+        try {
+          localStorage.removeItem(LICENSE_KEYS.savedKey);
+        } catch {
+          /* ignore */
+        }
+        setLicenseKey("");
+        alert(
+          reply === "BANNED"
+            ? "Security Alert: Your account has been suspended."
+            : "Security Alert: Your session has expired or your license is invalid. Please log in again."
+        );
+      });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [licenseKey]);
 
   const navRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
@@ -94,8 +132,23 @@ export const App = () => {
     return () => observer.disconnect();
   }, [positionIndicator]);
 
+  if (!licenseKey && !isBypassed()) {
+    return (
+      <LoginOverlay
+        onActivated={() =>
+          setLicenseKey(localStorage.getItem(LICENSE_KEYS.savedKey) || "")
+        }
+      />
+    );
+  }
+
   return (
     <>
+      {isBypassed() && (
+        <div className="bypass-marker" role="status">
+          licensing bypassed (dev build)
+        </div>
+      )}
       <div className="nav-bar" ref={navRef}>
         <div className="active-bg" ref={indicatorRef} />
         {TABS.map((tab) => (
@@ -131,7 +184,14 @@ export const App = () => {
               ) : tab.id === "tab-graph" ? (
                 <GraphEditor />
               ) : tab.id === "tab-theme" ? (
-                <ThemePanel />
+                <>
+                  <ThemePanel />
+                  <LicensePanel
+                    licenseKey={licenseKey}
+                    version={APP_VERSION}
+                    onLoggedOut={() => setLicenseKey("")}
+                  />
+                </>
               ) : tab.id === "tab-library" ? (
                 <LibraryBrowser />
               ) : tab.id === "tab-presets" ? (
