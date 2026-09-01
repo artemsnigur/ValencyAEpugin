@@ -306,3 +306,92 @@ h3 {
     font-weight: 600;
   }
 }
+
+.grid-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.grad-btn {
+  height: 32px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    var(--grad-angle),
+    var(--grad-start),
+    var(--grad-end)
+  );
+  border: none;
+  color: white;
+  border-radius: var(--radius);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  svg {
+    width: 30px;
+    height: 15px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+    filter: none !important;
+  }
+}
+
+.offset-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex: 4;
+  min-width: 150px;
+}
+
+.offset-btn {
+  height: 32px;
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0.5;
+  position: relative;
+
+  &.active-offset {
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    opacity: 1;
+    box-shadow: none;
+  }
+
+  // Same masked gradient hairline as the checked toggle state.
+  &.active-offset::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(
+      var(--grad-angle),
+      var(--grad-start),
+      var(--grad-end)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}

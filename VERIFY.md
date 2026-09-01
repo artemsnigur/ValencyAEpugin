@@ -11,7 +11,11 @@ Two standing checks apply to **every** entry, because both fail silently:
 - **Click every control the step introduced.** A handler that is rendered but
   not wired throws nothing; the button just does nothing.
 - **Undo every operation with a single Cmd+Z.** A missing or leaked undo group
-  is invisible until someone needs it.
+  is invisible until someone needs it. **Press it with After Effects focused,
+  not the panel** — the shipped panel intercepted Cmd+Z inside the panel and
+  forwarded it to AE via `app.executeCommand(16)`; that forwarding is not
+  ported yet, so Cmd+Z with panel focus currently does nothing. Tracked as a
+  known gap, not a failure of the step under test.
 
 ---
 
@@ -143,3 +147,71 @@ Audio Files / Image Files / Other Files, existing folders of those names reused
 rather than duplicated, nested items untouched. Single Cmd+Z restores the flat
 layout — the original leaked the undo group whenever the move loop threw, so
 confirm the group closes cleanly.
+
+---
+
+## [ ] 04 — Auto Twixtor: split-layer reimplementation
+
+Behaviour change. The original moved the playhead to the layer midpoint and ran
+`app.executeCommand(app.findMenuCommandId("Split Layer") || 2159)`. That is now
+`duplicate()` plus trimming both halves at the midpoint — no locale dependency,
+no hardcoded command ID, and the playhead no longer jumps.
+
+**Steps:** select **exactly one** layer and run any Twixtor graph button.
+
+**Correct result:** identical output to the shipped panel on the same layer.
+The split happens at the midpoint, the original keeps the first half, the new
+layer takes the second.
+
+**Known difference worth checking:** AE's Split Layer honours the preference
+"Create Split Layers Above Original Layer" (on by default). `duplicate()`
+always places the copy above. If that preference is **off** on your install,
+the shipped panel put the new layer below and this port puts it above. It
+should not change the result — both halves get precomposed together on the next
+line — but confirm the output matches.
+
+## [ ] 04 — Auto Twixtor: dialog suppression unwinds
+
+Worse than an undo leak: a suppression that never unwinds makes After Effects
+swallow every dialog until it is restarted. `beginSuppressDialogs` now runs
+after validation and unwinds in a `finally`.
+
+**Steps:** trigger each guard path — no comp, no selection, and a preset path
+pointing at a missing `.ffx`. Then, after each one, do something in AE that
+*should* raise a dialog (e.g. close an unsaved project).
+
+**Correct result:** the guard message appears **in the panel** (the original
+alerted while dialogs were suppressed, so the warning was swallowed), and AE
+still shows its own dialogs normally afterwards. If dialogs stop appearing, the
+unwind failed — restart AE and report it.
+
+**Also force a mid-run failure** if you can (e.g. a `.ffx` that is not a valid
+Twixtor preset) and confirm dialogs still work afterwards.
+
+## [ ] 04 — Auto Twixtor: offset and preset are arguments now
+
+`setTwixtorOffset` is deleted. The offset index and preset path live in the
+panel and are passed to `runTwixtor` on every call.
+
+**Steps:** pick each of the five offsets and run a graph. Set a preset via
+`.ffx`, close and reopen the panel, and run again.
+
+**Correct result:** the offset applied matches the highlighted button
+(-10/-5/0/+5/+10 frames on the tail key). The preset path survives a panel
+reload.
+
+> **Deliberate: the two panels share one setting.** The path is stored via
+> `app.settings` under the same section (`AutoTwix`) and key (`presetPath`) the
+> shipped panel uses. That is intentional — it means a path set in either panel
+> is visible to the other, which is what you want while A/B testing. It also
+> means **picking a different `.ffx` in the new panel silently changes the
+> shipped panel too.** If an A/B comparison suddenly disagrees, check this
+> before blaming the port. Revisit if the two ever need to diverge.
+
+## [ ] 04 — Auto Twixtor: all seven graph buttons
+
+**Steps:** run Easy Ease and Graph 1–6 on the same source.
+
+**Correct result:** each produces the same ease as the shipped panel's matching
+button. The `KeyframeEase` values were carried over verbatim, so any difference
+means the mode is being routed to the wrong curve.

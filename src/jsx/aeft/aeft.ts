@@ -532,3 +532,242 @@ export var organizeProject = function (): HostResult {
     message: "Organized " + moved + (moved === 1 ? " item." : " items.") ,
   };
 };
+
+// --- Twixtor -----------------------------------------------------------------
+
+var TWIXTOR_OFFSETS = [-10, -5, 0, 5, 10];
+var TWIXTOR_SECTION = "AutoTwix";
+var TWIXTOR_KEY = "presetPath";
+
+var defaultPresetPath = function (): string {
+  return new Folder("~/Desktop").fsName + "/TwixtorPresets/twixtor.ffx";
+};
+
+/** First layer in comp whose source is the given item. */
+var findLayerBySource = function (comp: CompItem, source: AVItem): Layer | null {
+  for (var i = 1; i <= comp.numLayers; i++) {
+    if ((comp.layer(i) as AVLayer).source === source) {
+      return comp.layer(i);
+    }
+  }
+  return null;
+};
+
+/** Ease curves per graph button, carried over verbatim from the original. */
+var applyEase = function (timeRemap: Property, mode: number): void {
+  if (timeRemap.numKeys < 2) return;
+  var first = 1;
+  var last = timeRemap.numKeys;
+  var dummy = new KeyframeEase(0.01, 33);
+
+  if (mode === 0) {
+    var flat = new KeyframeEase(0, 33);
+    timeRemap.setTemporalEaseAtKey(first, [flat], [flat]);
+    timeRemap.setTemporalEaseAtKey(last, [flat], [flat]);
+  } else if (mode === 1) {
+    timeRemap.setTemporalEaseAtKey(first, [dummy], [new KeyframeEase(1.26898, 14.59537)]);
+    timeRemap.setTemporalEaseAtKey(last, [new KeyframeEase(0.04976, 98.87928)], [dummy]);
+  } else if (mode === 2) {
+    timeRemap.setTemporalEaseAtKey(first, [dummy], [new KeyframeEase(10.20061, 5.16134)]);
+    timeRemap.setTemporalEaseAtKey(last, [new KeyframeEase(0.0659, 100)], [dummy]);
+  } else if (mode === 3) {
+    timeRemap.setTemporalEaseAtKey(first, [dummy], [new KeyframeEase(0.00797, 100)]);
+    timeRemap.setTemporalEaseAtKey(last, [new KeyframeEase(1.48144, 11.99612)], [dummy]);
+  } else if (mode === 4) {
+    timeRemap.setTemporalEaseAtKey(first, [dummy], [new KeyframeEase(3.21961, 8.12278)]);
+    timeRemap.setTemporalEaseAtKey(last, [new KeyframeEase(3.21344, 8.83633)], [dummy]);
+  } else if (mode === 5) {
+    timeRemap.setTemporalEaseAtKey(first, [dummy], [new KeyframeEase(152.3067, 0.47059)]);
+    timeRemap.setTemporalEaseAtKey(last, [new KeyframeEase(0.36494, 59.80845)], [dummy]);
+  } else if (mode === 6) {
+    timeRemap.setTemporalEaseAtKey(first, [dummy], [new KeyframeEase(0.51008, 58.05458)]);
+    timeRemap.setTemporalEaseAtKey(last, [new KeyframeEase(23.76619, 2.93754)], [dummy]);
+  }
+};
+
+/** The stored .ffx path, or the Desktop default the original fell back to. */
+export var getTwixtorPresetPath = function (): string {
+  if (app.settings.haveSetting(TWIXTOR_SECTION, TWIXTOR_KEY)) {
+    return app.settings.getSetting(TWIXTOR_SECTION, TWIXTOR_KEY);
+  }
+  return defaultPresetPath();
+};
+
+/**
+ * Pick a .ffx and remember it.
+ *
+ * The original also parked the path in a $.global between calls; the panel now
+ * holds it and passes it to runTwixtor. app.settings stays the persistence
+ * layer, under the same section and key the shipped panel uses, so a path set
+ * in either panel is visible to the other.
+ */
+export var selectTwixtorPreset = function (): HostResult & { path: string } {
+  var chosen = File.openDialog("Select .ffx", "*.ffx") as File | null;
+  if (!chosen) {
+    return { ok: false, message: "", path: getTwixtorPresetPath() };
+  }
+  app.settings.saveSetting(TWIXTOR_SECTION, TWIXTOR_KEY, chosen.fsName);
+  return {
+    ok: true,
+    message: "Preset set to " + chosen.name,
+    path: chosen.fsName,
+  };
+};
+
+/**
+ * Auto Twixtor.
+ *
+ * Splits a lone selected layer at its midpoint, precomposes the selection,
+ * applies the .ffx, precomposes again to bake, then builds a time remap with
+ * the chosen tail offset and ease curve.
+ *
+ * Ported from $.global.runTwixtor. Changes:
+ *  - offsetIndex and presetPath are arguments; the original read them from
+ *    $.global state written by a separate setTwixtorOffset call, which is gone.
+ *  - Split Layer is done with duplicate + trim instead of
+ *    executeCommand(findMenuCommandId("Split Layer") || 2159). The lookup is by
+ *    English label and finds nothing on a localised install, and the 2159
+ *    fallback is version-fragile. This also avoids moving the playhead.
+ *  - beginSuppressDialogs runs after validation and unwinds in a finally, so it
+ *    cannot be left on. A suppression that never unwinds makes After Effects
+ *    swallow dialogs until restart.
+ *  - Guard messages are returned rather than alert()ed. The original alerted
+ *    while dialogs were suppressed, so those warnings never reached anyone.
+ */
+export var runTwixtor = function (
+  mode: number,
+  offsetIndex: number,
+  presetPath: string
+): HostResult {
+  var comp = app.project.activeItem;
+  if (!comp || !(comp instanceof CompItem)) {
+    return { ok: false, message: "Select a composition first." };
+  }
+
+  var selected = comp.selectedLayers;
+  if (selected.length === 0) {
+    return { ok: false, message: "Select one or more layers first." };
+  }
+
+  var presetFile = new File(presetPath);
+  if (!presetFile.exists) {
+    return {
+      ok: false,
+      message: "Preset not found: " + presetPath + " - pick one with .ffx.",
+    };
+  }
+
+  if (offsetIndex < 0 || offsetIndex >= TWIXTOR_OFFSETS.length) {
+    return { ok: false, message: "Unknown offset." };
+  }
+  var selectedOffset = TWIXTOR_OFFSETS[offsetIndex];
+
+  var failure = "";
+
+  app.beginSuppressDialogs();
+  try {
+    app.beginUndoGroup("Auto Twixtor");
+    try {
+      var layers = selected;
+
+      // One layer splits at its midpoint first. The original moved the playhead
+      // and invoked the Split Layer menu command; duplicate + trim is the same
+      // operation without the locale dependency or the playhead jump.
+      if (layers.length === 1) {
+        var original = layers[0];
+        var midTime =
+          original.inPoint + (original.outPoint - original.inPoint) / 2;
+        var secondHalf = original.duplicate();
+        original.outPoint = midTime;
+        secondHalf.inPoint = midTime;
+        layers = [original, secondHalf];
+      }
+
+      var baseIn = Infinity;
+      var baseOut = -Infinity;
+      forEach(layers, function (layer) {
+        baseIn = Math.min(baseIn, layer.inPoint);
+        baseOut = Math.max(baseOut, layer.outPoint);
+      });
+      var duration = baseOut - baseIn;
+
+      forEach(layers, function (layer) {
+        layer.startTime -= baseIn;
+      });
+
+      var indices: number[] = [];
+      forEach(layers, function (layer) {
+        indices.push(layer.index);
+      });
+
+      var sourceComp = comp.layers.precompose(indices, "Twixtor_Source", true);
+      sourceComp.duration = duration;
+
+      var sourceLayer = findLayerBySource(comp, sourceComp);
+      if (!sourceLayer) {
+        throw new Error("Could not find the Twixtor_Source layer after precompose.");
+      }
+      sourceLayer.startTime = 0;
+      sourceLayer.applyPreset(presetFile);
+
+      var bakedComp = comp.layers.precompose(
+        [sourceLayer.index],
+        "Twixtor_Baked",
+        true
+      );
+      if (bakedComp.numLayers > 0) {
+        bakedComp.duration = bakedComp.layer(1).outPoint;
+      }
+
+      var baked = findLayerBySource(comp, bakedComp) as AVLayer;
+      if (!baked) {
+        throw new Error("Could not find the Twixtor_Baked layer after precompose.");
+      }
+      baked.startTime = 0;
+      baked.timeRemapEnabled = true;
+
+      var timeRemap = baked.property("ADBE Time Remapping") as Property;
+      var frame = comp.frameDuration;
+
+      // Re-seat the final key one frame earlier so the tail can be retimed.
+      var lastKey = timeRemap.keyTime(timeRemap.numKeys);
+      var safeTime = lastKey - frame;
+      timeRemap.setValueAtTime(safeTime, timeRemap.valueAtTime(safeTime, true));
+      timeRemap.removeKey(timeRemap.nearestKeyIndex(lastKey));
+
+      var tailIndex = timeRemap.numKeys;
+      var tailTime = timeRemap.keyTime(tailIndex);
+      var tailValue = timeRemap.keyValue(tailIndex);
+      if (selectedOffset === 0) {
+        timeRemap.setValueAtTime(duration, tailValue);
+      } else {
+        timeRemap.setValueAtTime(tailTime + frame * selectedOffset, tailValue);
+      }
+      timeRemap.removeKey(timeRemap.nearestKeyIndex(tailTime));
+
+      baked.outPoint = timeRemap.keyTime(timeRemap.numKeys);
+      applyEase(timeRemap, mode);
+      baked.startTime += baseIn;
+    } finally {
+      app.endUndoGroup();
+    }
+  } catch (e: any) {
+    failure = e && e.message ? e.message : "unknown error";
+  } finally {
+    // Unmissable by construction: if this is skipped, After Effects keeps
+    // swallowing every dialog until it is restarted.
+    app.endSuppressDialogs(false);
+  }
+
+  if (failure !== "") {
+    return { ok: false, message: "Auto Twixtor failed: " + failure };
+  }
+  return {
+    ok: true,
+    message:
+      "Twixtor applied at " +
+      (selectedOffset > 0 ? "+" : "") +
+      selectedOffset +
+      " frames.",
+  };
+};
