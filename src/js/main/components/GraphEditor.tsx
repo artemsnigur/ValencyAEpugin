@@ -20,7 +20,7 @@ const PRESET_TWEEN_MS = 350;
 
 /** Smallest either panel may be squeezed to while dragging the splitter. */
 const SPLITTER_MIN_PANEL = 130;
-const TOP_HEIGHT_KEY = "graph-top-height";
+const TOP_HEIGHT_KEY = "valency.graph.top-height";
 
 const curvePath = (p1: Point, p2: Point) =>
   `M 0 100 C ${p1.x} ${p1.y}, ${p2.x} ${p2.y}, 100 0`;

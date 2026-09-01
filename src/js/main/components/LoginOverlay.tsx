@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { openLinkInBrowser } from "../../lib/utils/bolt";
 import { KEYS, checkLicense, getHWID, isConfigured } from "./licenseStore";
 
 /**
@@ -90,13 +89,14 @@ export const LoginOverlay = ({ onActivated }: { onActivated: () => void }) => {
             {status.text}
           </p>
         )}
-        <button
-          className="outline-btn pop-anim full-width"
-          style={{ marginTop: "10px", fontSize: "10px" }}
-          onClick={() => openLinkInBrowser("https://payhip.com/sundxeditor")}
-        >
+        {/*
+          Inert until Valency has a store. The previous product's link went to
+          its developer's Payhip page, which would have sold Valency users
+          someone else's product.
+        */}
+        <p className="login-note" style={{ marginTop: "10px", marginBottom: 0 }}>
           Get License
-        </button>
+        </p>
       </div>
     </div>
   );

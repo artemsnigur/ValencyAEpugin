@@ -1,8 +1,4 @@
-import { openLinkInBrowser } from "../../lib/utils/bolt";
 import { KEYS, getHWID, logoutLicense } from "./licenseStore";
-
-const BUG_FORM =
-  "https://docs.google.com/forms/d/e/1FAIpQLSeqO-tHRqdJMWlBI-yXahbnbjyZPHY2eg4aL3GY5fy3PU3e4Q/viewform?usp=sharing&ouid=106577620163208559655";
 
 /**
  * Support & License.
@@ -39,23 +35,13 @@ export const LicensePanel = ({
   return (
     <div className="panel compact-panel">
       <h3 style={{ textAlign: "center", marginBottom: "10px" }}>Support &amp; License</h3>
+      {/*
+        Removed with the rebrand: "Report Bug" pointed at a Google Form owned by
+        the previous product's developer, and "Follow Developer" at their
+        Instagram. Both routed Valency users to a third party. A replacement bug
+        link goes here when there is one.
+      */}
       <div className="flex-buttons" style={{ marginBottom: "10px" }}>
-        <button
-          className="outline-btn pop-anim"
-          style={{ flex: 1, fontSize: "10px" }}
-          onClick={() => openLinkInBrowser(BUG_FORM)}
-        >
-          Report Bug
-        </button>
-      </div>
-      <div className="flex-buttons" style={{ marginBottom: "10px" }}>
-        <button
-          className="grad-btn pop-anim"
-          style={{ flex: 2, fontSize: "11px" }}
-          onClick={() => openLinkInBrowser("https://www.instagram.com/sundxedit/")}
-        >
-          Follow Developer
-        </button>
         <button className="outline-btn pop-anim logout-btn" onClick={logout}>
           Log Out
         </button>

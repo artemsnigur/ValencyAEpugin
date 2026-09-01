@@ -3,7 +3,7 @@ import { version } from "./package.json";
 
 const config: CEP_Config = {
   version,
-  id: "com.valency.aepanel",
+  id: "com.valency.motion",
   displayName: "Valency",
   symlink: "local",
   port: 3000,

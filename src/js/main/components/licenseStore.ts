@@ -2,8 +2,8 @@ import { child_process, os } from "../../lib/cep/node";
 import { csi } from "../../lib/utils/bolt";
 
 export const KEYS = {
-  savedKey: "saved-license-key",
-  hwidCache: "sundx_hwid",
+  savedKey: "valency.license.key",
+  hwidCache: "valency.license.machine-id",
 };
 
 const PLACEHOLDER = "REPLACE_WITH_";
@@ -46,7 +46,7 @@ export const isBypassed = () => import.meta.env.VITE_LICENSE_BYPASS === "true";
 export const getHWID = (): string => {
   // SystemPath.MY_DOCUMENTS, the same path the shipped panel used.
   const documents = csi.getSystemPath("myDocuments") as string;
-  const idFile = `${documents}/AutoEditPro/sys_id.txt`;
+  const idFile = `${documents}/Valency/machine-id.txt`;
 
   try {
     const existing = window.cep.fs.readFile(idFile);
@@ -99,7 +99,7 @@ export const getHWID = (): string => {
   }
 
   try {
-    window.cep.fs.makedir(`${documents}/AutoEditPro`);
+    window.cep.fs.makedir(`${documents}/Valency`);
     window.cep.fs.writeFile(idFile, id);
   } catch {
     // Not fatal; the value is still used for this session.

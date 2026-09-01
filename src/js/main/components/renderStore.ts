@@ -2,14 +2,14 @@ import { csi } from "../../lib/utils/bolt";
 
 /** Same key names as the shipped panel; separate origins, separate stores. */
 export const KEYS = {
-  favouriteTemplates: "fav-render-templates",
-  lastTemplate: "last-render-template",
-  autoImport: "cb-auto-import",
-  autoWorkArea: "cb-auto-workarea",
-  specificFolder: "cb-specific-folder",
-  paths: "render-paths",
+  favouriteTemplates: "valency.render.fav-templates",
+  lastTemplate: "valency.render.last-template",
+  autoImport: "valency.render.auto-import",
+  autoWorkArea: "valency.render.auto-workarea",
+  specificFolder: "valency.render.specific-folder",
+  paths: "valency.render.paths",
   /** Written by the theme tab in step 09; read here with the shipped default. */
-  prefix: "render-prefix",
+  prefix: "valency.render.prefix",
 };
 
 const read = (key: string, fallback = "") => {
@@ -65,7 +65,7 @@ const cacheKey = () => {
   } catch {
     // Outside CEP (browser preview) there is no host environment.
   }
-  return `render-templates-cache-${version}`;
+  return `valency.render.templates-cache-${version}`;
 };
 
 export const readCachedTemplates = (): string[] | null => {

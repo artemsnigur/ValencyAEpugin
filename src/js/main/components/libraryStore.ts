@@ -12,13 +12,13 @@ export type LibTab = {
 /** Same key names as the shipped panel; separate origins, separate stores.
     The cache *files* on disk are genuinely shared - see cachePathFor. */
 export const KEYS = {
-  roots: "lib-roots",
-  favourites: "lib-favs",
-  hidden: "hidden-lib-items",
-  cacheFolder: "lib-cache-folder",
-  tabs: "lib-tabs",
-  activeTab: "lib-active-tab",
-  audioVolume: "audio-volume",
+  roots: "valency.library.roots",
+  favourites: "valency.library.favourites",
+  hidden: "valency.library.hidden",
+  cacheFolder: "valency.library.cache-folder",
+  tabs: "valency.library.tabs",
+  activeTab: "valency.library.active-tab",
+  audioVolume: "valency.theme.audio-volume",
 };
 
 /** Extensions the shipped scanLibraryFolder accepted, carried over verbatim. */

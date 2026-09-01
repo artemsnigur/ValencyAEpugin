@@ -31,7 +31,7 @@ export const BUILTIN_PRESETS: GraphPreset[] = [
 
 /** Same key name the shipped panel uses. Separate origins most likely mean
     separate stores, so this is format compatibility, not shared state. */
-export const FAVOURITES_KEY = "graph-favorites-sandbox";
+export const FAVOURITES_KEY = "valency.graph.favourites";
 
 export const loadFavourites = (): GraphPreset[] => {
   try {

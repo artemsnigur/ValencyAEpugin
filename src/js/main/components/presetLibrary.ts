@@ -5,10 +5,10 @@ export type PresetFolder = { name: string; path: string };
 
 /** Same localStorage key names the shipped panel uses. Different extension
     IDs mean different origins, so expect separate stores. */
-export const ROOT_KEY = "saved-preset-folder-path";
-export const FAVOURITES_KEY = "fav-presets";
+export const ROOT_KEY = "valency.presets.root";
+export const FAVOURITES_KEY = "valency.presets.favourites";
 /** Written by the theme tab; read here with the shipped panel's default. */
-export const LAYER_COLOUR_KEY = "layer-color";
+export const LAYER_COLOUR_KEY = "valency.theme.layer-color";
 
 const posix = (p: string) => p.replace(/\\/g, "/");
 

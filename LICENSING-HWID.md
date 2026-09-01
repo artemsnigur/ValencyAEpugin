@@ -14,7 +14,7 @@ lockout it is trying to prevent (see "Why the client cannot fix this alone").
 
 `AutoEditRestored/main.js:1468-1517`, `getHWID()`:
 
-1. **1471-1477** — read `~/Documents/AutoEditPro/sys_id.txt`. If it holds more
+1. **1471-1477** — read `~/Documents/Valency/machine-id.txt`. If it holds more
    than 5 characters, **return it immediately**. The hardware is never
    consulted again once this file exists.
 2. **1482-1490** — Windows: `execSync("wmic csproduct get uuid")`, then match a
@@ -23,10 +23,10 @@ lockout it is trying to prevent (see "Why the client cannot fix this alone").
    then match the quoted value.
 4. **1499-1501** — if neither produced ≥5 characters, fall back to
    `os.hostname() + "-" + os.userInfo().username`.
-5. **1503-1511** — **any throw above lands here.** Use `localStorage["sundx_hwid"]`
+5. **1503-1511** — **any throw above lands here.** Use `localStorage["valency.license.machine-id"]`
    if present; otherwise generate
    `"AE-SYS-" + Date.now().toString(36) + "-" + random`, and store it.
-6. **1512-1516** — write whatever was produced to `sys_id.txt`.
+6. **1512-1516** — write whatever was produced to `machine-id.txt`.
 
 **`wmic` was deprecated across Windows 10/11 and is removed from Windows 11
 24H2.** On those machines step 2 throws, so step 5 runs: the identity becomes a
@@ -36,8 +36,8 @@ cached value, or a **random string generated at that moment**.
 
 | Situation | Result |
 |---|---|
-| On 24H2, `sys_id.txt` already exists from an older build | Keeps working — step 1 short-circuits before the broken call. **Masked, not fixed.** |
-| On 24H2, file missing — new install, new machine, Documents cleared, or a cache wipe | New random identity. Server sees a mismatch. **Licence refused.** |
+| On 24H2, `machine-id.txt` already exists from an earlier run | Keeps working — step 1 short-circuits before the broken call. **Masked, not fixed.** |
+| On 24H2, file missing — new install, new machine, or Documents cleared | New random identity. Server sees a mismatch. **Licence refused.** |
 | Upgrades to 24H2 *and* loses the file | Same. They changed nothing but the OS. |
 | Machine renamed (the 4 fallback) | Identity changes. Same outcome. |
 
@@ -92,7 +92,7 @@ is absent or all-zeros (some VMs and OEM builds).
 and has been stable for many macOS releases. `IOPlatformUUID` is the standard
 per-machine identifier.
 
-**But the exposure is structurally identical**: one `execSync` inside the same
+**The exposure is structurally identical**: one `execSync` inside the same
 `try`, so any failure — a shell issue, a sandbox restriction, a parse miss —
 drops into the same random-identity fallback at step 5. The difference is
 likelihood, not blast radius.
@@ -110,7 +110,7 @@ Neither needs elevation.
 
 ## Why the client cannot fix this alone
 
-1. **Drift is detectable; its cause is not.** Comparing `sys_id.txt` to a fresh
+1. **Drift is detectable; its cause is not.** Comparing `machine-id.txt` to a fresh
    hardware read is trivial. But "user edited it", "copied from another
    machine", "written by an older build", and "this machine cannot produce a
    hardware UUID" are indistinguishable from the client.
@@ -137,7 +137,7 @@ A client change alone causes the lockout. The server has to lead:
    `hwid2`). The server matches against **either**, and on a match through the
    old one, **re-anchors** the stored record to the new one. Existing bindings
    migrate silently on next contact.
-2. **Prefer the hardware value once re-anchored**, so an edited `sys_id.txt`
+2. **Prefer the hardware value once re-anchored**, so an edited `machine-id.txt`
    stops being authoritative — this is what actually closes the flaw.
 3. **Ungate the rebind path**, or add one. Logout must not require a matching
    HWID, or a user whose identity legitimately changed can never recover
@@ -156,10 +156,37 @@ authoritative. The client change is the last step, not the first.
 
 ---
 
+## Prerequisite: this product needs its own deployment, key and store
+
+**Before Valency reaches anyone, it must point at a new Apps Script deployment,
+with a new shared key and an empty licence store.**
+
+Two independent reasons, either of which is disqualifying on its own:
+
+1. **The old store still holds valid records.** Valency is standalone and shares
+   nothing with the product it was ported from. Pointing it at that deployment
+   would authorise **every previous customer of the old product** on sight —
+   shipping a new paid product pre-licensed to strangers.
+2. **The old endpoint is compromised by design.** Its shared key ships inside
+   every copy of the old `.zxp` and is readable in a minute. Inheriting the
+   endpoint inherits that exposure, and no amount of care on this side fixes it.
+
+The rebrand handles the client half — new extension id, new storage names, new
+machine-id path, no fallback reads. The server half is not something the client
+can do.
+
+**Checklist before first release:**
+
+- [ ] New Apps Script project and deployment URL
+- [ ] New shared key, generated fresh, never the old one
+- [ ] Empty licence store — do not import the old records
+- [ ] `VITE_LICENSE_ENDPOINT` and `VITE_LICENSE_KEY` in `.env` point at the new one
+- [ ] Confirm the old deployment is unreachable from a Valency build
+
 ## Confidence
 
 - **Verified in this repo:** the failure chain, line numbers, fallback order,
-  and that `sys_id.txt` short-circuits the hardware read.
+  and that the cached id file short-circuits the hardware read.
 - **General knowledge, not tested here:** `wmic` removal in Windows 11 24H2,
   `Get-CimInstance` as the replacement, `MachineGuid` semantics and
   permissions, `ioreg` stability. Confirm on real machines before relying on

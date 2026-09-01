@@ -33,7 +33,7 @@ detail matters more than the pass.
 **Shared state** — *corrected after batch 2; see L0 in batch 3.* Only one of
 these is genuinely shared between the two panels:
 
-- **Shared:** the Twixtor `.ffx` path — `app.settings`, section `AutoTwix`, key
+- **Shared:** the Twixtor `.ffx` path — `app.settings`, section `ValencyMotion`, key
   `presetPath`. That is After Effects state, not browser state, so both panels
   read and write the same value. Changing the preset in one **does** change it
   in the other.
@@ -286,9 +286,8 @@ see the note below. **A failure in apply** points at the argument order into
 > `main.js` or `host.jsx`. Both are shadow copies of localStorage values the
 > panel actually reads (`saved-preset-folder-path` and `render-paths`). So the
 > section is not load-bearing for anything else. The other two sections *are*
-> live: `AutoTwix` (Twixtor preset path, read and written) and
-> `RenderAutomator` (last render path, read and written inside
-> `startZxpRender`).
+> live: `ValencyMotion` now holds both the Twixtor preset path and the last
+> render path; they were `ValencyMotion` and `ValencyMotion` before the rebrand.
 >
 > **Can the stale value and the new localStorage root disagree visibly? No.**
 > *(Reasoning corrected — the original said "both panels share that key", which
@@ -623,8 +622,8 @@ After Effects state, not browser state, so they are unaffected by origin:
 
 | Shared thing | Where |
 |---|---|
-| Twixtor `.ffx` path | `app.settings`, section `AutoTwix` |
-| Machine identity | `~/Documents/AutoEditPro/sys_id.txt` |
+| Twixtor `.ffx` path | `app.settings`, section `ValencyMotion` |
+| Machine identity | `~/Documents/Valency/machine-id.txt` |
 | Library listing cache | `cache_*.json` in the chosen cache folder |
 
 **The middle one is why this batch has no isolation.** Both panels compute the
@@ -656,7 +655,7 @@ succeeds, the overlay disappears, and the Theme tab shows your licence
 truncated to 15 characters.
 
 **Server state:** activation binds the HWID to your account. Because
-`sys_id.txt` is shared, the HWID should be **identical** to the one the shipped
+`machine-id.txt` is shared, the HWID should be **identical** to the one the shipped
 panel already registered, making this a no-op rebind. If you get
 "License is bound to another PC" on your own machine, stop — that means the
 HWID differs between panels, which is itself the finding, and see
@@ -677,7 +676,7 @@ network tab for the `action=silent_check` request.
 unlocked.
 
 **Then the negative case, if you can arrange it safely:** temporarily edit
-`~/Documents/AutoEditPro/sys_id.txt` to a different value and reopen.
+`~/Documents/Valency/machine-id.txt` to a different value and reopen.
 
 **Correct:** the panel clears the saved licence, shows "Security Alert: Your
 session has expired…" and returns to the activation overlay. **Restore the file
@@ -720,3 +719,43 @@ DevTools console.
 
 **Correct:** returns the server's version string. Note what it says — it feeds
 the post-parity decision about what a version mismatch should do to the user.
+
+## [ ] Rebrand — storage renamed with no migration
+
+Every stored name moved to Valency naming and **nothing reads the old names**.
+There is no fallback and no migration, deliberately: this product is standalone
+and shares nothing with the old one.
+
+| Was | Now |
+|-----|-----|
+| `app.settings` `AutoTwix` / `presetPath` | `ValencyMotion` / `twixtorPresetPath` |
+| `app.settings` `RenderAutomator` / `lastPath` | `ValencyMotion` / `lastRenderPath` |
+| `~/Documents/AutoEditPro/sys_id.txt` | `~/Documents/Valency/machine-id.txt` |
+| unprefixed localStorage keys | `valency.<group>.<key>` |
+| `com.valency.aepanel` | `com.valency.motion` |
+
+**Expect these on first launch after the rename — all correct, not bugs:**
+
+- **Every setting is back to its default.** Theme, slots, library roots, preset
+  root, render destinations, favourites. The old values are still on disk under
+  the old names and are simply never read.
+- **The Twixtor `.ffx` path is empty** and needs picking again. `app.settings`
+  is After Effects state and survives uninstall, so the old value is still there
+  under `AutoTwix` — it is just not what the panel looks at now.
+- **A fresh machine identity.** `~/Documents/Valency/machine-id.txt` does not
+  exist yet, so `getHWID()` does a hardware read and writes a new file. The old
+  `AutoEditPro` folder is left alone.
+
+> **Do not misdiagnose a failed activation as this.** The new machine id is
+> expected, and harmless *because the licence store is going to be new anyway*
+> — see the prerequisite in `LICENSING-HWID.md`. If activation fails against a
+> **new** deployment, the machine id is not the cause.
+
+**Steps:** launch the panel with no prior Valency state. Visit every tab.
+
+**Correct:** no errors, no blank panels. Reading a missing `app.settings`
+section returns nothing and the panel falls back to its default rather than
+throwing — the Twixtor path guard is `haveSetting()` before `getSetting()`.
+Every tab renders with defaults and accepts new values that then persist.
+
+**A throw on any tab** means a missing-key path is unguarded; note which tab.

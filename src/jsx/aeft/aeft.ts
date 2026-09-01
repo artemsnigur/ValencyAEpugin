@@ -536,8 +536,8 @@ export var organizeProject = function (): HostResult {
 // --- Twixtor -----------------------------------------------------------------
 
 var TWIXTOR_OFFSETS = [-10, -5, 0, 5, 10];
-var TWIXTOR_SECTION = "AutoTwix";
-var TWIXTOR_KEY = "presetPath";
+var SETTINGS_SECTION = "ValencyMotion";
+var TWIXTOR_KEY = "twixtorPresetPath";
 
 var defaultPresetPath = function (): string {
   return new Folder("~/Desktop").fsName + "/TwixtorPresets/twixtor.ffx";
@@ -587,8 +587,8 @@ var applyEase = function (timeRemap: Property, mode: number): void {
 
 /** The stored .ffx path, or the Desktop default the original fell back to. */
 export var getTwixtorPresetPath = function (): string {
-  if (app.settings.haveSetting(TWIXTOR_SECTION, TWIXTOR_KEY)) {
-    return app.settings.getSetting(TWIXTOR_SECTION, TWIXTOR_KEY);
+  if (app.settings.haveSetting(SETTINGS_SECTION, TWIXTOR_KEY)) {
+    return app.settings.getSetting(SETTINGS_SECTION, TWIXTOR_KEY);
   }
   return defaultPresetPath();
 };
@@ -606,7 +606,7 @@ export var selectTwixtorPreset = function (): HostResult & { path: string } {
   if (!chosen) {
     return { ok: false, message: "", path: getTwixtorPresetPath() };
   }
-  app.settings.saveSetting(TWIXTOR_SECTION, TWIXTOR_KEY, chosen.fsName);
+  app.settings.saveSetting(SETTINGS_SECTION, TWIXTOR_KEY, chosen.fsName);
   return {
     ok: true,
     message: "Preset set to " + chosen.name,
@@ -1268,8 +1268,8 @@ export var startRender = function (options: RenderOptions): HostResult {
     defaultName = buildDefaultName(options.destPath);
     chosenFilePath = options.destPath + "/" + defaultName;
   } else {
-    var lastPath = app.settings.haveSetting("RenderAutomator", "lastPath")
-      ? app.settings.getSetting("RenderAutomator", "lastPath")
+    var lastPath = app.settings.haveSetting(SETTINGS_SECTION, "lastRenderPath")
+      ? app.settings.getSetting(SETTINGS_SECTION, "lastRenderPath")
       : "~/";
     if (!new Folder(lastPath).exists) lastPath = "~/";
     defaultName = buildDefaultName(lastPath);
@@ -1281,7 +1281,7 @@ export var startRender = function (options: RenderOptions): HostResult {
       return { ok: false, message: "" };
     }
     chosenFilePath = outputFile.fsName;
-    app.settings.saveSetting("RenderAutomator", "lastPath", outputFile.parent.fsName);
+    app.settings.saveSetting(SETTINGS_SECTION, "lastRenderPath", outputFile.parent.fsName);
   }
 
   var fileObj = new File(chosenFilePath);
