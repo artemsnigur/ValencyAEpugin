@@ -14,7 +14,7 @@ export type LibTab = {
 export const KEYS = {
   roots: "lib-roots",
   favourites: "lib-favs",
-  hidden: "lib-hidden",
+  hidden: "hidden-lib-items",
   cacheFolder: "lib-cache-folder",
   tabs: "lib-tabs",
   activeTab: "lib-active-tab",

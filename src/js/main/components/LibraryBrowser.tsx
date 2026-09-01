@@ -144,10 +144,23 @@ export const LibraryBrowser = () => {
     writeJSON(KEYS.favourites, next);
   };
 
-  const hide = (path: string) => {
+  /**
+   * Hide an item from the panel.
+   *
+   * Confirms first, as the original did - this destroys state with no visible
+   * undo. Hiding a root also removes it from the roots list, again matching
+   * the original.
+   */
+  const hide = (path: string, isRoot = false) => {
+    if (!confirm("Hide this item from the script?")) return;
     const next = hidden.concat(path);
     setHidden(next);
     writeJSON(KEYS.hidden, next);
+    if (isRoot) {
+      const remaining = roots.filter((r) => r.path !== path);
+      setRoots(remaining);
+      writeJSON(KEYS.roots, remaining);
+    }
   };
 
   const playAudio = (path: string) => {
@@ -242,9 +255,13 @@ export const LibraryBrowser = () => {
           className="outline-btn pop-anim lib-tool"
           title="Clear cache"
           onClick={() => {
-            const removed = clearCache(cacheFolder);
+            // Confirm before, not report after - the original asked first, and
+            // this deletes files with no undo.
+            if (cacheFolder === "") return alert("Cache folder is not set.");
+            if (!confirm("Are you sure you want to clear the library cache?")) return;
+            clearCache(cacheFolder);
+            alert("Cache cleared successfully!");
             loadPath(active.path);
-            alert(`Cleared ${removed} cached folder listing(s).`);
           }}
         >
           ⌫
@@ -276,7 +293,9 @@ export const LibraryBrowser = () => {
               key={folder.path}
               className={`lib-item-container pop-anim${deleteMode ? " delete-target" : ""}`}
               title={folder.name}
-              onClick={() => (deleteMode ? hide(folder.path) : openFolder(folder))}
+              onClick={() =>
+                deleteMode ? hide(folder.path, atHome) : openFolder(folder)
+              }
             >
               <div className="lib-folder">
                 <div
