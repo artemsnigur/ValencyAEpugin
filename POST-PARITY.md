@@ -110,3 +110,48 @@ So the picker persists `btn-anim` and changes nothing visible. Ported as-is.
 
 Same shape as item 6: a menu that lies. Either give the three names distinct
 motion, or collapse the control.
+
+---
+
+# Recorded decisions (not bugs, not queued work)
+
+## D1. The library does not require a cache folder
+
+The original blocked the Library tab until a cache folder was chosen — the grid
+showed "Step 1: Set Cache Folder" and browsing was unavailable, and
+`clearLibraryCache` refused with "Cache folder is not set."
+
+The port **browses without one**, silently skipping the cache: `readCachedListing`
+and `writeCachedListing` both return early when the folder is empty, so every
+visit is a fresh scan. Setting a folder turns caching on.
+
+Deliberately left as a divergence pending a decision, because the original's
+behaviour is arguable in both directions:
+
+- **Keeping the gate** makes the cost explicit and stops users blaming the panel
+  for slow browsing they could have avoided. It is also a strange first-run
+  experience: a media browser that refuses to browse.
+- **Not gating** works immediately and degrades to "slower on large folders".
+  The risk is that nobody ever sets a cache folder and the feature is dead
+  weight.
+
+Note the *guard* on clearing the cache **is** restored — that one is about not
+silently doing nothing when a button is pressed.
+
+## D2. Logout failure is silent
+
+The original showed "Connection Error. You must be connected to the internet to
+log out and unlink your PC." when the logout request failed, and **kept the user
+logged in**.
+
+The port's `logoutLicense` swallows the error, returns `""`, and clears local
+state regardless — so a user who logs out while offline is logged out locally
+but **still bound on the server**, with no message saying so. They then cannot
+re-activate from another machine, and nothing told them why.
+
+Left as a divergence pending a decision because the right behaviour is not
+obvious: refusing to log out when offline is correct for the server's benefit
+but traps a user who genuinely wants off this machine. The original chose to
+refuse. Worth deciding alongside the wider rebind question in
+`LICENSING-HWID.md`, since both are about what happens when client and server
+disagree about who owns a machine.
