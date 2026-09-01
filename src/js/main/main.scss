@@ -360,6 +360,7 @@ h3 {
 .offset-btn {
   height: 32px;
   flex: 1;
+  flex-shrink: 0;
   background: transparent;
   border: none;
   color: var(--text-color);
@@ -986,6 +987,15 @@ body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !im
   border-color: var(--grad-start) !important;
   border-style: solid !important;
   box-shadow: none !important;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 input[type="color"] {
