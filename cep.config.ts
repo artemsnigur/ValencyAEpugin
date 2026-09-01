@@ -39,10 +39,20 @@ const config: CEP_Config = {
     sourceMap: true,
   },
   zxp: {
-    country: "US",
-    province: "CA",
-    org: "Company",
-    password: "password",
+    // Self-signed. Installs show an untrusted-publisher warning naming the org
+    // below - that is expected, and the reason these values are real rather
+    // than placeholders: the warning should read "Valency", not "Company".
+    //
+    // vite-cep-plugin interpolates these into a shell command unquoted, so
+    // every value here must stay a single token with no spaces.
+    country: "PT",
+    province: "Porto",
+    org: "Valency",
+    // Not a secret. It is the passphrase for a throwaway .p12 that ZXPSignCmd
+    // generates into a temp directory at build time, uses once, and never
+    // ships. Named so nobody mistakes it for a credential, or copies a literal
+    // "password" somewhere it would matter.
+    password: "selfsigned-not-a-secret",
     tsa: [
       "http://timestamp.digicert.com/", // Windows Only
       "http://timestamp.apple.com/ts01", // MacOS Only
