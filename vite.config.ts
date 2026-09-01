@@ -55,8 +55,9 @@ export default defineConfig({
     alias: [{ find: "@esTypes", replacement: path.resolve(__dirname, "src") }],
   },
   root,
-  // root is src/js, and envDir defaults to root - without this Vite would look
-  // for .env inside src/js instead of the project root.
+  // Kept deliberately though nothing reads .env today: envDir defaults to
+  // `root`, which is src/js, so without this the next env var added would be
+  // silently unresolved. One line against a non-obvious trap.
   envDir: __dirname,
   // The shipped panel hardcoded LOCAL_VERSION and drifted from package.json.
   define: { __APP_VERSION__: JSON.stringify(pkgVersion) },

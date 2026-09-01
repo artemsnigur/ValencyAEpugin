@@ -47,13 +47,7 @@ Three radios writing a CSS custom property that `minmax()` reads — swap the
 `110px` for `var(--lib-thumb-min)` and set it from the panel. No host code, no
 change to navigation.
 
-## 3. Reword provenance comments when the reference dump  is deleted
-
-Roughly a dozen `Ported from the reference dump ...` comments across `src/` will
-become dangling references to a folder that no longer exists. Fold the reword
-into the deletion commit.
-
-## 4. Library cache: compare mtime, not just names
+## 3. Library cache: compare mtime, not just names
 
 `listingMatches` compares a sorted join of entry **names** between the cached
 listing and disk — the shipped panel's check, ported as-is. Additions,
@@ -65,7 +59,7 @@ cache format is shared with the shipped panel - genuinely so, since the cache is
 files on disk rather than localStorage - so either bump the cache filename
 prefix or make the extra field optional so an old cache still parses.
 
-## 5. Library cards: surface load failures
+## 4. Library cards: surface load failures
 
 No `onerror` anywhere on the media elements. A corrupt, unreadable or
 unsupported file renders as an empty tile — indistinguishable from one that has
@@ -75,7 +69,7 @@ Fix: an `onError` handler swapping in a "could not preview" state, now trivial
 since the cards are React components. Distinguishing it from the not-yet-loaded
 state also needs the placeholder to be visibly different from the error state.
 
-## 6. Render device dropdown: wire it or remove it
+## 5. Render device dropdown: wire it or remove it
 
 `#render-device` persists a choice under `render-device` that **never reaches
 the renderer**. In the shipped panel it is read back only to restore the
@@ -93,7 +87,7 @@ selector — the user believes they have configured something. Two options:
   information, and it makes the fake selector beside it more confusing, not
   less.
 
-## 7. Animation dropdown: implement the variants or drop it
+## 6. Animation dropdown: implement the variants or drop it
 
 `#anim-select` offers Classic Pop / Elastic Bounce / Liquid Glass. In the
 shipped stylesheet all three resolve to **identical rules** — same transition,
@@ -111,33 +105,6 @@ So the picker persists `btn-anim` and changes nothing visible. Ported as-is.
 Same shape as item 6: a menu that lies. Either give the three names distinct
 motion, or collapse the control.
 
-## 8. Wire release credentials into CI
-
-`.github/workflows/main.yml` runs `npm run zxp` on tag push with no `.env`
-present, so **a release built today would ship with the licensing placeholders
-and a panel that reports itself unconfigured**.
-
-Needs two repository secrets and a step before the build:
-
-```
-VITE_LICENSE_ENDPOINT
-VITE_LICENSE_KEY
-```
-
-written into a `.env` in the workspace immediately before `npm run zxp`. Not
-wired now — deliberately, so no credential path exists until the endpoint work
-is settled. Until then, releases must be built locally from a real `.env`.
-
-## 9. Machine identity on Windows 11 24H2
-
-Tracked separately in **LICENSING-HWID.md** because it is a live product
-problem rather than migration work: `wmic` is gone in 24H2, so `getHWID` falls
-through to a cached or random identity and customers who upgrade can lose their
-licence. That document has the failure chain, replacement identifiers, the
-macOS exposure, and what the Apps Script has to do first.
-
-The client-side half of the fix is blocked on the server; a client-only change
-causes the lockout it is meant to prevent.
 ---
 
 # Recorded decisions (not bugs, not queued work)
@@ -165,20 +132,3 @@ behaviour is arguable in both directions:
 Note the *guard* on clearing the cache **is** restored — that one is about not
 silently doing nothing when a button is pressed.
 
-## D2. Logout failure is silent
-
-The original showed "Connection Error. You must be connected to the internet to
-log out and unlink your PC." when the logout request failed, and **kept the user
-logged in**.
-
-The port's `logoutLicense` swallows the error, returns `""`, and clears local
-state regardless — so a user who logs out while offline is logged out locally
-but **still bound on the server**, with no message saying so. They then cannot
-re-activate from another machine, and nothing told them why.
-
-Left as a divergence pending a decision because the right behaviour is not
-obvious: refusing to log out when offline is correct for the server's benefit
-but traps a user who genuinely wants off this machine. The original chose to
-refuse. Worth deciding alongside the wider rebind question in
-`LICENSING-HWID.md`, since both are about what happens when client and server
-disagree about who owns a machine.

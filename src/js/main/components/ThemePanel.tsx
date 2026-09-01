@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { evalTS } from "../../lib/utils/bolt";
+
+/** Injected from package.json at build time rather than hardcoded. */
+const APP_VERSION = __APP_VERSION__;
 import {
   DEFAULTS,
   K,
@@ -358,7 +361,7 @@ export const ThemePanel = () => {
         </button>
 
         <p className="panel-hint" style={{ marginTop: "10px", marginBottom: 0 }}>
-          Project render engine: {engine.toUpperCase()}
+          Project render engine: {engine.toUpperCase()} · Valency {APP_VERSION}
         </p>
       </div>
     </>
