@@ -817,3 +817,60 @@ h3 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+// --- Library browser, ported from AutoEditRestored/style.css ----------------
+
+.lib-tabs-bar { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+.lib-tabs-bar::-webkit-scrollbar { display: none; }
+.lib-tab { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px; min-width: 130px; max-width: 170px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.2s; color: rgba(255,255,255,0.6); flex-shrink: 0; }
+.lib-tab span:first-child { pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: center; }
+.lib-tab:hover { background: rgba(255,255,255,0.1); color: white; }
+.lib-tab.active { background: rgba(255,255,255,0.15); border-color: var(--grad-start); color: white; box-shadow: none; }
+.lib-tab-close { opacity: 0.5; padding: 2px; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; transition: 0.2s; font-size: 10px; pointer-events: auto; }
+.lib-tab-close:hover { opacity: 1; background: #ff4444; color: white; }
+.lib-tab-add { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.6); border-radius: 6px; cursor: pointer; padding: 0 14px; font-size: 16px; transition: 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 38px; }
+.lib-tab-add:hover { border-color: rgba(255,255,255,0.3); color: white; background: rgba(255,255,255,0.1); }
+.delete-mode-active .lib-item-container { animation: none !important; }
+.delete-mode-active .lib-folder,
+.delete-mode-active .lib-file { opacity: 0.35; filter: grayscale(1); border-color: rgba(255,255,255,0.1); }
+.delete-mode-active .lib-item-container::after { content: "✕"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -70%); background: #ff4444; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; z-index: 20; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s; }
+.delete-mode-active .lib-item-container:hover::after { transform: translate(-50%, -70%) scale(1.15); background: #ff2222; }
+.delete-mode-active .lib-item-container * { pointer-events: none !important; }
+.audio-progress-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.25); border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; overflow: hidden; z-index: 15; transition: height 0.15s cubic-bezier(0.25, 0.8, 0.25, 1); }
+.audio-progress-bar:hover { height: 8px; cursor: pointer; background: rgba(255,255,255,0.4); }
+.audio-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--grad-start), var(--grad-end)); transition: width 0.1s linear; }
+body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !important; transform: none !important; filter: none !important; background: transparent !important; }
+.library-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; align-content: start; padding-bottom: 10px; }
+.lib-item-container { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 100%; overflow: visible !important; padding: 0; position: relative; }
+.lib-folder, .lib-file { width: 100%; aspect-ratio: 16/9; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.02); border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; flex-shrink: 0; }
+.lib-item-container:hover .lib-folder,
+.lib-item-container:hover .lib-file { background: rgba(255, 255, 255, 0.07); border-color: rgba(255,255,255,0.25); z-index: 2; }
+.lib-name { font-size: 10px; font-weight: 600; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.7; transition: 0.25s; background: transparent !important; border: none !important; }
+.lib-item-container:hover .lib-name { opacity: 1; color: white; }
+.folder-has-favs .folder-icon { filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5)); }
+.folder-icon { width: 45px; height: 45px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); transition: 0.2s; fill: #ffd700; }
+.lib-item-container:hover .folder-icon { filter: brightness(1.08); }
+.lib-file video, .lib-file img { width: 100%; height: 100%; object-fit: contain; background: #000; position: absolute; top: 0; left: 0; z-index: 1; border-radius: 8px; }
+.media-badge { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.7); padding: 3px 6px; border-radius: 4px; font-size: 8px; font-weight: bold; letter-spacing: 0.5px; z-index: 5; color: white; backdrop-filter: blur(4px); }
+.lib-star { position: absolute; top: 5px; right: 5px; font-size: 14px; color: rgba(255, 255, 255, 0.3); z-index: 10; cursor: pointer; transition: 0.2s; line-height: 1; background: rgba(0,0,0,0.5); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.lib-star:hover { transform: scale(1.2); color: white; }
+.lib-star.active { color: #ffd700; background: rgba(0,0,0,0.8); }
+.lib-import-seq { position: absolute; bottom: 5px; right: 5px; z-index: 10; cursor: pointer; transition: 0.2s; background: rgba(0,0,0,0.6); border-radius: 4px; padding: 4px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); opacity: 0; }
+.lib-folder:hover .lib-import-seq { opacity: 1; }
+.lib-import-seq:hover { background: var(--grad-start); }
+.crumb { cursor: pointer; color: rgba(255, 255, 255, 0.5); transition: 0.2s; }
+.crumb:hover { color: white; }
+.crumb.active { font-weight: bold; color: #ffffff; }
+.crumb-sep { opacity: 0.3; pointer-events: none; }
+
+/* Panel-side additions: the shipped panel had no placeholder or error state. */
+.lib-placeholder { position: absolute; inset: 0; z-index: 1; border-radius: 8px;
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 6px, transparent 6px 12px); }
+.lib-type-icon { opacity: 0.5; z-index: 1; pointer-events: none; }
+.lib-type-icon.faint { opacity: 0.3; }
+.lib-breadcrumbs { display: flex; flex-wrap: wrap; gap: 4px; font-size: 10px;
+  font-weight: 600; margin: 4px 0 8px; flex-shrink: 0; }
+.lib-empty { text-align: center; width: 100%; grid-column: 1 / -1; opacity: 0.5;
+  font-size: 11px; margin-top: 20px; }
+.outline-btn.lib-tool { flex: 0 0 30px; padding: 0; font-size: 12px; }

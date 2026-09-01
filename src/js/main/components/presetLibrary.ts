@@ -37,14 +37,24 @@ export const scanPresetRoot = (
   }
 
   const dirs = [{ name: path.basename(root), path: posix(root) }];
-  for (const entry of rootEntries) {
-    const full = path.join(root, entry);
-    try {
-      if (fs.statSync(full).isDirectory()) {
-        dirs.push({ name: entry, path: posix(full) });
+  // withFileTypes classifies in one syscall instead of a statSync per entry.
+  // It needs Node >= 10.10 and CEP's bundled version varies, hence the fallback.
+  try {
+    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        dirs.push({ name: entry.name, path: posix(path.join(root, entry.name)) });
       }
-    } catch {
-      // Unreadable entry - skip it rather than abandoning the whole scan.
+    }
+  } catch {
+    for (const entry of rootEntries) {
+      const full = path.join(root, entry);
+      try {
+        if (fs.statSync(full).isDirectory()) {
+          dirs.push({ name: entry, path: posix(full) });
+        }
+      } catch {
+        // Unreadable entry - skip it rather than abandoning the whole scan.
+      }
     }
   }
 

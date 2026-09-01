@@ -1434,3 +1434,199 @@ export var startRender = function (options: RenderOptions): HostResult {
       "Rendered to " + decodeURI(finalName) + (imported ? " and imported." : "."),
   };
 };
+
+// --- Library imports ---------------------------------------------------------
+
+var SEQUENCE_EXTS = ["png", "jpg", "jpeg", "tif", "tiff", "exr", "tga", "webp"];
+
+/** Scale a layer to cover the comp, as the original did on every import. */
+var scaleToCover = function (comp: CompItem, layer: AVLayer): void {
+  if (!layer.width || !layer.height) return;
+  var ratio =
+    Math.max(comp.width / layer.width, comp.height / layer.height) * 100;
+  (layer.property("Scale") as Property).setValue([ratio, ratio]);
+};
+
+/**
+ * Import one file from the library and add it to the active comp.
+ *
+ * Ported from $.global.importMediaToAE. The undo group was already balanced on
+ * every path; the changes are that guard messages are returned instead of
+ * alert()ed and the group closes in a finally.
+ */
+export var importMedia = function (filePath: string): HostResult {
+  var file = new File(filePath);
+  if (!file.exists) {
+    return { ok: false, message: "File not found on disk." };
+  }
+
+  var comp = app.project.activeItem;
+  var hasComp = !!comp && comp instanceof CompItem;
+  var targetLayer =
+    hasComp && (comp as CompItem).selectedLayers.length > 0
+      ? (comp as CompItem).selectedLayers[0]
+      : null;
+
+  var failure = "";
+  var added = false;
+
+  app.beginUndoGroup("Import Asset from Library");
+  try {
+    var io = new ImportOptions(file);
+    try {
+      io.sequence = false;
+      io.forceAlphabetical = false;
+    } catch (e) {
+      // Some formats reject these options; the import itself still works.
+    }
+
+    var importedItem;
+    try {
+      importedItem = app.project.importFile(io);
+    } catch (e) {
+      failure = "After Effects cannot import this file format.";
+      importedItem = null;
+    }
+
+    if (importedItem && hasComp) {
+      var target = comp as CompItem;
+      if (
+        importedItem instanceof FootageItem ||
+        importedItem instanceof CompItem
+      ) {
+        var newLayer = target.layers.add(importedItem) as AVLayer;
+        newLayer.startTime = target.time;
+        scaleToCover(target, newLayer);
+        if (targetLayer && newLayer.index !== targetLayer.index) {
+          newLayer.moveBefore(targetLayer);
+        }
+        added = true;
+      }
+    }
+  } catch (e: any) {
+    failure = e && e.message ? e.message : "unknown error";
+  } finally {
+    app.endUndoGroup();
+  }
+
+  if (failure !== "") {
+    return { ok: false, message: failure };
+  }
+  return {
+    ok: true,
+    message: added
+      ? "Added " + decodeURI(file.name) + " to the comp."
+      : "Imported " + decodeURI(file.name) + " into the project.",
+  };
+};
+
+/**
+ * Import every image sequence in a folder, laid end to end from the playhead.
+ *
+ * Ported from $.global.importSequencesFromFolder. Same changes as importMedia,
+ * plus: the original swallowed per-sequence failures in an empty catch, so a
+ * folder where every sequence failed reported success. Failures are counted and
+ * reported now.
+ */
+export var importSequences = function (folderPath: string): HostResult {
+  var folder = new Folder(folderPath);
+  if (!folder.exists) {
+    return { ok: false, message: "Folder not found." };
+  }
+
+  var comp = app.project.activeItem;
+  if (!comp || !(comp instanceof CompItem)) {
+    return { ok: false, message: "Select a composition first." };
+  }
+
+  var files = folder.getFiles();
+  var imgFiles: File[] = [];
+  for (var i = 0; i < files.length; i++) {
+    if (files[i] instanceof File) {
+      var parts = files[i].name.split(".");
+      if (includes(SEQUENCE_EXTS, parts[parts.length - 1].toLowerCase())) {
+        imgFiles.push(files[i] as File);
+      }
+    }
+  }
+  if (imgFiles.length === 0) {
+    return { ok: false, message: "No image sequences found in that folder." };
+  }
+
+  imgFiles.sort(function (a, b) {
+    var nameA = decodeURI(a.name).toLowerCase();
+    var nameB = decodeURI(b.name).toLowerCase();
+    if (nameA < nameB) return -1;
+    if (nameA > nameB) return 1;
+    return 0;
+  });
+
+  // Group by everything except the trailing frame number.
+  var pattern = /^(.*?)(\d+)(\.[a-zA-Z0-9]+)$/;
+  var groups: { [key: string]: File[] } = {};
+  for (var k = 0; k < imgFiles.length; k++) {
+    var name = decodeURI(imgFiles[k].name);
+    var match = name.match(pattern);
+    var key = match ? match[1] + "___EXT___" + match[3] : name;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(imgFiles[k]);
+  }
+
+  var imported = 0;
+  var failed = 0;
+  var failure = "";
+
+  app.beginUndoGroup("Import Image Sequences");
+  try {
+    var insertTime = comp.time;
+    for (var key2 in groups) {
+      if (!groups.hasOwnProperty(key2)) continue;
+      var seqFiles = groups[key2];
+      if (seqFiles.length <= 1) continue;
+
+      try {
+        var io = new ImportOptions(seqFiles[0]);
+        io.sequence = true;
+        io.forceAlphabetical = false;
+        var importedItem = app.project.importFile(io) as FootageItem;
+        if (importedItem.mainSource && importedItem.mainSource.conformFrameRate) {
+          importedItem.mainSource.conformFrameRate = comp.frameRate;
+        }
+        var newLayer = comp.layers.add(importedItem) as AVLayer;
+        newLayer.startTime = insertTime;
+        scaleToCover(comp, newLayer);
+        insertTime += newLayer.outPoint - newLayer.inPoint;
+        imported++;
+      } catch (e) {
+        // The original swallowed this silently, so a folder where every
+        // sequence failed still looked like a success.
+        failed++;
+      }
+    }
+  } catch (e: any) {
+    failure = e && e.message ? e.message : "unknown error";
+  } finally {
+    app.endUndoGroup();
+  }
+
+  if (failure !== "") {
+    return { ok: false, message: "Import sequences failed: " + failure };
+  }
+  if (imported === 0) {
+    return {
+      ok: false,
+      message:
+        failed > 0
+          ? "Found " + failed + " sequence(s) but none could be imported."
+          : "No multi-frame sequences found in that folder.",
+    };
+  }
+  return {
+    ok: true,
+    message:
+      "Imported " +
+      imported +
+      (imported === 1 ? " sequence." : " sequences.") +
+      (failed > 0 ? " " + failed + " failed." : ""),
+  };
+};

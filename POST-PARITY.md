@@ -52,3 +52,24 @@ change to navigation.
 Roughly a dozen `Ported from AutoEditRestored/...` comments across `src/` will
 become dangling references to a folder that no longer exists. Fold the reword
 into the deletion commit.
+
+## 4. Library cache: compare mtime, not just names
+
+`listingMatches` compares a sorted join of entry **names** between the cached
+listing and disk — the shipped panel's check, ported as-is. Additions,
+deletions and renames are caught; **a file overwritten in place is not**, so a
+re-rendered clip goes on showing its old preview indefinitely.
+
+Fix: store `mtimeMs` per entry alongside the name and compare that too. The
+cache format is shared with the shipped panel, so either bump the cache
+filename prefix or make the extra field optional so an old cache still parses.
+
+## 5. Library cards: surface load failures
+
+No `onerror` anywhere on the media elements. A corrupt, unreadable or
+unsupported file renders as an empty tile — indistinguishable from one that has
+simply not lazy-loaded yet. Ported as-is.
+
+Fix: an `onError` handler swapping in a "could not preview" state, now trivial
+since the cards are React components. Distinguishing it from the not-yet-loaded
+state also needs the placeholder to be visibly different from the error state.

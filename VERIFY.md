@@ -409,3 +409,79 @@ folder" but leave the selected destination unset. Click RENDER.
 **Correct:** "Destination folder is not set." and **your queued items are still
 there**. The original removed every QUEUED item first and only then discovered
 the destination was missing.
+
+## [ ] 08 — Library: browsing, tabs and breadcrumbs
+
+**Setup:** a real media library — nested folders, several hundred files in at
+least one of them, a mix of video, image, audio and unsupported types.
+
+**Steps:** add a root with **+**. Open folders, use the breadcrumbs to jump
+back. Open a second tab, navigate it somewhere else, switch between them, close
+one. Search. Star a folder and a file. Reopen the panel.
+
+**Correct:** matches the shipped panel — roots at Home, folders before files,
+favourites sorted first, tabs and breadcrumbs surviving a reload. Roots,
+favourites, hidden items, tabs and the cache folder all use the shipped panel's
+localStorage keys, so both panels see the same state.
+
+**Watch the folder with several hundred files.** The listing scan moved from
+`cep.fs.readdir` plus an ExtendScript `Folder.getFiles()` round trip to a single
+Node `readdirSync(..., { withFileTypes: true })`. It should feel the same or
+faster; if it is noticeably slower, the `withFileTypes` path is failing and the
+per-entry `statSync` fallback is running.
+
+## [ ] 08 — Library: import
+
+**Steps:** double-click a video, an image, an audio file and an unsupported
+file. Click the download badge on a folder containing an image sequence.
+
+**Correct:** the asset lands in the active comp at the playhead, scaled to
+cover, above the selected layer if there was one. One Cmd+Z each. Unsupported
+files report "After Effects cannot import this file format." rather than
+appearing to do nothing.
+
+**Sequences:** the original swallowed per-sequence failures in an empty catch,
+so a folder where every sequence failed still looked successful. Failures are
+counted and reported now — "Imported 2 sequences. 1 failed."
+
+## [ ] 08 — Library: media lifecycle on a big folder
+
+The question this step was meant to answer. Findings, and what to confirm:
+
+- **Videos were already handled** in the shipped panel — off-screen elements got
+  `pause()`, `removeAttribute("src")`, `load()`, which releases the decoder.
+- **Images were not.** They were emitted with a plain `src` and
+  `loading="lazy"`, so they loaded near the viewport and **never released**. The
+  panel's own image-unload branch was unreachable, because the selector required
+  `[data-src]` and images never had it. Both are managed here via
+  `IntersectionObserver` with the same 600px band.
+- **It does not accumulate across navigation** either way — changing folder
+  replaces the grid and the old elements are collected. The unbounded case was
+  one folder with many images.
+
+**Steps:** open a folder with several hundred images and scroll to the bottom
+and back, watching memory in the CEP debugger (`localhost:8860`, Chrome task
+manager). Then the same with several hundred videos.
+
+**Correct:** memory rises while scrolling and comes back down. If it only ever
+rises, the observer is not releasing.
+
+> **Known ceiling, not fixed:** Chromium caps simultaneous media elements per
+> renderer (historically ~75). The 600px band can hold roughly 60–100 video
+> tiles live at once on a wide panel. Past the cap, `src` assignment silently
+> no-ops and tiles stay blank — and with no `onerror` (see POST-PARITY.md item
+> 5) that is indistinguishable from still loading. Narrowing the band or
+> capping concurrent videos would fix it; both are post-parity.
+
+## [ ] 08 — Library: cache behaviour
+
+**Steps:** set a cache folder. Browse into a folder. Add a file to it outside
+the panel and revisit. Rename a file outside the panel and revisit. **Overwrite
+a file in place** (same name, new content) and revisit. Clear the cache.
+
+**Correct:** additions, deletions and renames are picked up. **An overwrite is
+not** — the preview stays stale. That is the shipped behaviour, ported as-is;
+see POST-PARITY.md item 4.
+
+A half-written or corrupt `cache_*.json` should fall back to a full rescan
+rather than showing an error — the parse is guarded.
