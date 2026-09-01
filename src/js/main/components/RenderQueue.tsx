@@ -17,7 +17,7 @@ import {
 /**
  * Render queue.
  *
- * Ported from the first panel of #tab-render in AutoEditRestored/index.html.
+ * Ported from the first panel of #tab-render in the shipped 1.4.0 markup.
  * The Remove Unused Footage / Organize panel below it landed in step 03.
  */
 export const RenderQueue = () => {

@@ -4,7 +4,7 @@ import { KEYS, checkLicense, getHWID, isConfigured } from "./licenseStore";
 /**
  * Activation overlay.
  *
- * Ported from #login-overlay in AutoEditRestored/index.html. Note that the
+ * Ported from #login-overlay in the shipped 1.4.0 markup. Note that the
  * deobfuscated dump force-hides this with `#login-overlay { display: none
  * !important }` in its head, so the dump cannot be used to compare licensing
  * behaviour - only the shipped .zxp can.

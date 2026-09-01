@@ -22,7 +22,7 @@ export type HostResult = {
  * the frames that differ from their predecessor, and rewrites the layer's time
  * remap to play only those.
  *
- * Ported from $.global.analyzeDuplicates in AutoEditRestored/host.jsx. Two
+ * Ported from $.global.analyzeDuplicates in the shipped 1.4.0 host script. Two
  * changes from the original: isLowMovement arrives as a real boolean rather
  * than the string "true", and failures return a message instead of alert()ing
  * from inside the host.

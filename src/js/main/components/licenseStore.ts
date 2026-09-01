@@ -37,7 +37,7 @@ export const isBypassed = () => import.meta.env.VITE_LICENSE_BYPASS === "true";
 /**
  * Machine identifier.
  *
- * Ported faithfully from getHWID() in AutoEditRestored/main.js:1468, flaw
+ * Ported faithfully from getHWID() in the shipped 1.4.0 panel script (main.js:1468), flaw
  * intact and deliberately so. See LICENSING-HWID.md: the cached file wins over
  * the hardware read, which both defeats device binding and hides the fact that
  * `wmic` no longer exists on Windows 11 24H2. A client-only fix causes the

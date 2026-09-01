@@ -20,7 +20,7 @@ const FRAME_STEP = 5;
 /**
  * Preset browser.
  *
- * Ported from #tab-presets in AutoEditRestored/index.html. The folder scan runs
+ * Ported from #tab-presets in the shipped 1.4.0 markup. The folder scan runs
  * panel-side on Node's fs; only applying a preset and opening AE's own save
  * dialog cross into the host layer.
  */

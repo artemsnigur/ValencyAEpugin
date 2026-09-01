@@ -1,6 +1,6 @@
 @use "../variables.scss" as *;
 
-// Tab shell, ported from AutoEditRestored/style.css
+// Tab shell, ported from the shipped 1.4.0 stylesheet
 
 .nav-bar,
 .content-area {
@@ -118,7 +118,7 @@
 }
 
 // ---------------------------------------------------------------------------
-// Shared primitives, ported from AutoEditRestored/style.css
+// Shared primitives, ported from the shipped 1.4.0 stylesheet
 // ---------------------------------------------------------------------------
 
 .panel {
@@ -397,7 +397,7 @@ h3 {
   }
 }
 
-// --- Bezier graph editor, ported from AutoEditRestored/style.css -------------
+// --- Bezier graph editor, ported from the shipped 1.4.0 stylesheet -------------
 
 .graph-wrapper {
   position: relative;
@@ -658,7 +658,7 @@ h3 {
   flex-shrink: 0;
 }
 
-// --- Preset browser, ported from AutoEditRestored/style.css ------------------
+// --- Preset browser, ported from the shipped 1.4.0 stylesheet ------------------
 
 .align-row {
   display: flex;
@@ -790,7 +790,7 @@ h3 {
   }
 }
 
-// --- Render queue, ported from AutoEditRestored/style.css -------------------
+// --- Render queue, ported from the shipped 1.4.0 stylesheet -------------------
 
 .panel-hint {
   text-align: center;
@@ -896,7 +896,7 @@ h3 {
 }
 
 
-// --- Library browser, ported from AutoEditRestored/style.css ----------------
+// --- Library browser, ported from the shipped 1.4.0 stylesheet ----------------
 
 .lib-tabs-bar { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
 .lib-tabs-bar::-webkit-scrollbar { display: none; }
@@ -952,7 +952,7 @@ body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !im
   font-size: 11px; margin-top: 20px; }
 .outline-btn.lib-tool { flex: 0 0 30px; padding: 0; font-size: 12px; }
 
-// --- Theme panel, ported from AutoEditRestored/style.css --------------------
+// --- Theme panel, ported from the shipped 1.4.0 stylesheet --------------------
 
 .compact-panel {
   padding: 10px;
@@ -1027,7 +1027,7 @@ input[type="range"] {
   transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
-// --- Licensing, ported from AutoEditRestored/style.css ----------------------
+// --- Licensing, ported from the shipped 1.4.0 stylesheet ----------------------
 
 .login-overlay {
   position: fixed;

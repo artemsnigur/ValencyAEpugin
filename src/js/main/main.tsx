@@ -35,7 +35,7 @@ type Tab = {
   step: string;
 };
 
-// Order is taken verbatim from AutoEditRestored/index.html and must not change
+// Order is taken verbatim from the shipped 1.4.0 markup and must not change
 // until parity is reached - reordering is its own commit afterwards.
 const TABS: Tab[] = [
   { id: "tab-twixtor", label: "Twixtor", step: "done" },

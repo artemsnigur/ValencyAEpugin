@@ -21,7 +21,8 @@ yarn-error.log
 # claude code local overrides
 .claude/settings.local.json
 
-# deobfuscated reference dump of the shipped build - not maintained, to be
-# deleted once src/ reaches feature parity. Contains a plaintext endpoint
-# and shared key; must never be committed to this public repo.
+# The deobfuscated 1.4.0 reference dump lived here until parity was reached.
+# It is gone from the tree now and kept outside the repo. The rule stays so a
+# stray copy - which still holds the old plaintext endpoint and shared key -
+# cannot be committed to this public repo by accident.
 AutoEditRestored/

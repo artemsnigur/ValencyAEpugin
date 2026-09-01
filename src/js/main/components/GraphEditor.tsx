@@ -28,7 +28,7 @@ const curvePath = (p1: Point, p2: Point) =>
 /**
  * Bezier graph editor.
  *
- * Ported from #tab-graph in AutoEditRestored/index.html and the drag, preset
+ * Ported from #tab-graph in the shipped 1.4.0 markup and the drag, preset
  * and favourite handling in main.js. Every DOM lookup the original made at
  * module load (svgGraph, dot1/2, hitbox1/2, line1/2, curve, starBtn,
  * presetsContainer) is a ref or state here.

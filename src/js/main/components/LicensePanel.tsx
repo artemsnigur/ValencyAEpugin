@@ -3,7 +3,7 @@ import { KEYS, getHWID, logoutLicense } from "./licenseStore";
 /**
  * Support & License.
  *
- * Ported from the second panel of #tab-theme in AutoEditRestored/index.html.
+ * Ported from the second panel of #tab-theme in the shipped 1.4.0 markup.
  * Help / Guide is not ported: it opened a modal of screenshots from an `img/`
  * folder that is not part of this repo.
  */

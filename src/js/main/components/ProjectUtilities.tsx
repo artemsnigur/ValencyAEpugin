@@ -4,7 +4,7 @@ import { useHostAction } from "./useHostAction";
 /**
  * Remove Unused Footage / Organize.
  *
- * Ported from the bottom panel of #tab-render in AutoEditRestored/index.html
+ * Ported from the bottom panel of #tab-render in the shipped 1.4.0 markup
  * (#render-bottom-btns). The rest of the Render tab lands in step 07.
  */
 export const ProjectUtilities = () => {

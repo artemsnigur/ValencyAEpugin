@@ -12,7 +12,7 @@ lockout it is trying to prevent (see "Why the client cannot fix this alone").
 
 ## The failure chain
 
-`AutoEditRestored/main.js:1468-1517`, `getHWID()`:
+`the shipped 1.4.0 panel script:1468-1517`, `getHWID()`:
 
 1. **1471-1477** — read `~/Documents/Valency/machine-id.txt`. If it holds more
    than 5 characters, **return it immediately**. The hardware is never

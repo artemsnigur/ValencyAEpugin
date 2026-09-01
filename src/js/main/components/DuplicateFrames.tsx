@@ -5,7 +5,7 @@ import { useHostAction } from "./useHostAction";
 /**
  * Duplicate Frames Remover: Analyze / Del KF / Align.
  *
- * Ported from the first panel of #tab-twixtor in AutoEditRestored/index.html.
+ * Ported from the first panel of #tab-twixtor in the shipped 1.4.0 markup.
  */
 export const DuplicateFrames = () => {
   const [lowMovement, setLowMovement] = useState(false);

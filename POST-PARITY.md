@@ -1,7 +1,7 @@
 # Post-parity queue
 
 Work deliberately deferred until `src/` reaches feature parity and
-`AutoEditRestored/` is deleted. Each is its own commit. Nothing here blocks a
+the reference dump is deleted. Each is its own commit. Nothing here blocks a
 migration step.
 
 ## 1. Forward Cmd+Z / Cmd+Shift+Z to After Effects
@@ -47,9 +47,9 @@ Three radios writing a CSS custom property that `minmax()` reads — swap the
 `110px` for `var(--lib-thumb-min)` and set it from the panel. No host code, no
 change to navigation.
 
-## 3. Reword provenance comments when AutoEditRestored/ is deleted
+## 3. Reword provenance comments when the reference dump  is deleted
 
-Roughly a dozen `Ported from AutoEditRestored/...` comments across `src/` will
+Roughly a dozen `Ported from the reference dump ...` comments across `src/` will
 become dangling references to a folder that no longer exists. Fold the reword
 into the deletion commit.
 

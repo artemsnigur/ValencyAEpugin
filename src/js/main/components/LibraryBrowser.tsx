@@ -26,7 +26,7 @@ const HOME: LibTab = {
 /**
  * Library browser.
  *
- * Ported from #tab-library in AutoEditRestored/index.html. Folder listing runs
+ * Ported from #tab-library in the shipped 1.4.0 markup. Folder listing runs
  * panel-side on Node's fs; only importing crosses into the host layer.
  */
 export const LibraryBrowser = () => {

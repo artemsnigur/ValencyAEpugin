@@ -24,7 +24,7 @@ const VIDEO_EXTS = ["mp4", "webm", "ogg"];
 /**
  * Theme panel.
  *
- * Ported from the first panel of #tab-theme in AutoEditRestored/index.html. The
+ * Ported from the first panel of #tab-theme in the shipped 1.4.0 markup. The
  * Support & License panel below it belongs to step 10.
  *
  * This tab also owns three settings the other tabs read: Layer Clr (presets),

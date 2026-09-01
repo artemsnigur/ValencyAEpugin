@@ -24,7 +24,7 @@ const GRAPHS = [
 /**
  * Auto Twixtor.
  *
- * Ported from the second panel of #tab-twixtor in AutoEditRestored/index.html.
+ * Ported from the second panel of #tab-twixtor in the shipped 1.4.0 markup.
  * The offset index and preset path live here rather than in ExtendScript
  * globals, and are passed to runTwixtor on every call.
  */
