@@ -215,3 +215,54 @@ reload.
 **Correct result:** each produces the same ease as the shipped panel's matching
 button. The `KeyframeEase` values were carried over verbatim, so any difference
 means the mode is being routed to the wrong curve.
+
+---
+
+## [ ] 05 — Graph editor: curve output matches the shipped panel
+
+The ease maths in `applyGraphToKeys` was carried over line for line, including
+the `x1 < 0.001` / `x2 > 0.999` clamps, the spatial-vs-dimensional speed split,
+and the `toFixed(4)` rounding the panel applies before the call.
+
+**Steps:** layer with two position keyframes. In both panels, load the same
+built-in preset, select the two keys, and hit APPLY. Compare the resulting ease
+in After Effects' own graph editor. Repeat with a scale (multi-dimensional,
+non-spatial) property and with a rotation (single-dimensional) property.
+
+**Correct result:** identical curves. Position is the spatial path — a single
+speed for the whole vector; scale gets a separate ease per dimension.
+
+**Also check the guard paths:** APPLY with no comp, and with a comp but no
+keyframes selected. Expect a message in the panel, no `alert()`, and no stray
+"Apply Bezier Graph" entry in Edit > Undo History. (This host function already
+closed its undo group correctly on both guards — nothing was fixed here, so a
+leak would be a regression I introduced.)
+
+## [ ] 05 — Graph editor: drag, presets, favourites
+
+**Steps:** drag each handle, including past the top and bottom of the box.
+Click several built-in presets. Star a curve, switch to Favorites, confirm it
+is there. Right-click it to delete. Close and reopen the panel.
+
+**Correct result:** handles clamp to x 0–100 and y −50–150, the nearer handle is
+the one grabbed, presets animate over ~350ms, the star lights gold when the
+current curve matches a saved one, and favourites survive a panel reload.
+
+> Favourites are stored under `graph-favorites-sandbox`, **the same localStorage
+> key the shipped panel uses**. Both panels run in the same CEP host, so they
+> share the store — a favourite saved in one appears in the other, and a
+> deletion in one removes it from both. Deliberate, same reasoning as the
+> Twixtor preset path.
+
+## [ ] 05 — Graph editor: splitter
+
+**Steps:** drag the 6px gap between the graph and the preset grid. Resize the
+panel. Reopen it.
+
+**Correct result:** the split moves, neither panel shrinks below 130px, and the
+position persists across a reload under `graph-top-height`.
+
+> The shipped markup drew a white grabber bar inside the splitter and then hid
+> it with `#graph-splitter > div { display: none !important }` later in the same
+> stylesheet, so the strip is invisible in the shipped panel too. Ported as-is.
+> If you would rather it were visible, that is a change, not a fix.

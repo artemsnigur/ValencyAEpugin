@@ -771,3 +771,153 @@ export var runTwixtor = function (
       " frames.",
   };
 };
+
+// --- Bezier graph ------------------------------------------------------------
+
+/**
+ * Apply a bezier ease to every selected keyframe pair.
+ *
+ * Takes the two control points normalised to 0..1, converts them into a
+ * KeyframeEase speed/influence pair per dimension, and writes them across each
+ * consecutive pair of selected keys.
+ *
+ * Ported from $.global.applyGraphToKeys. This one closed its undo group on both
+ * guard paths already, so there is no leak to fix; the change is that guard
+ * messages are returned instead of alert()ed, and the four control values
+ * arrive as numbers rather than strings needing parseFloat.
+ */
+export var applyGraphToKeys = function (
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): HostResult {
+  var comp = app.project.activeItem;
+  if (!comp || !(comp instanceof CompItem)) {
+    return { ok: false, message: "Select a composition first." };
+  }
+
+  var selProps = comp.selectedProperties;
+  if (selProps.length === 0) {
+    return { ok: false, message: "Select keyframes in the timeline first." };
+  }
+
+  // Clamped exactly as the original did - a zero x1 would divide by zero below.
+  if (x1 < 0.001) x1 = 0.001;
+  if (x1 > 1) x1 = 1;
+  if (x2 < 0) x2 = 0;
+  if (x2 > 0.999) x2 = 0.999;
+
+  var influenceOut = x1 * 100;
+  var influenceIn = (1 - x2) * 100;
+
+  var eased = 0;
+  var failure = "";
+
+  app.beginUndoGroup("Apply Bezier Graph");
+  try {
+    forEach(selProps, function (selected) {
+      var prop = selected as Property;
+      if (!prop.canVaryOverTime || prop.selectedKeys.length < 2) return;
+
+      var selKeys = prop.selectedKeys;
+      var propType = prop.propertyValueType;
+      if (propType === PropertyValueType.COLOR) return;
+
+      var isSpatial =
+        propType === PropertyValueType.TwoD_SPATIAL ||
+        propType === PropertyValueType.ThreeD_SPATIAL;
+
+      for (var k = 0; k < selKeys.length - 1; k++) {
+        var k1 = selKeys[k];
+        var k2 = selKeys[k + 1];
+        var duration = prop.keyTime(k2) - prop.keyTime(k1);
+
+        // Shape, text and custom properties have no numeric value to derive a
+        // speed from, so their eases are written with speed 0.
+        var isShapeOrCustom =
+          propType === PropertyValueType.SHAPE ||
+          propType === PropertyValueType.CUSTOM_VALUE ||
+          propType === PropertyValueType.TEXT_DOCUMENT ||
+          propType === PropertyValueType.NO_VALUE;
+
+        var v1 = null;
+        var v2 = null;
+        if (!isShapeOrCustom) {
+          try {
+            v1 = prop.keyValue(k1);
+            v2 = prop.keyValue(k2);
+          } catch (e) {
+            isShapeOrCustom = true;
+          }
+        }
+
+        var dimensions = 1;
+        if (v1 !== null && v1 instanceof Array) {
+          dimensions = v1.length;
+        }
+        // Spatial properties carry a single speed for the whole vector.
+        var easeDimensions = isSpatial ? 1 : dimensions;
+
+        var easeOutArr = [];
+        var easeInArr = [];
+        for (var d = 0; d < easeDimensions; d++) {
+          var speedOut = 0;
+          var speedIn = 0;
+          if (!isShapeOrCustom) {
+            var valDiff = 0;
+            if (isSpatial) {
+              var dx = dimensions >= 2 ? v2[0] - v1[0] : 0;
+              var dy = dimensions >= 2 ? v2[1] - v1[1] : 0;
+              var dz = dimensions === 3 ? v2[2] - v1[2] : 0;
+              valDiff = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            } else {
+              valDiff = dimensions === 1 ? v2 - v1 : v2[d] - v1[d];
+            }
+            var averageSpeed = valDiff / duration;
+            speedOut = averageSpeed * (y1 / x1);
+            speedIn = averageSpeed * ((1 - y2) / (1 - x2));
+            if (isNaN(speedOut) || !isFinite(speedOut)) speedOut = 0;
+            if (isNaN(speedIn) || !isFinite(speedIn)) speedIn = 0;
+          }
+          easeOutArr.push(new KeyframeEase(speedOut, influenceOut));
+          easeInArr.push(new KeyframeEase(speedIn, influenceIn));
+        }
+
+        // The typings model temporal ease as a fixed-length tuple of 1, 2 or 3
+        // KeyframeEase, but the dimension count is only known at runtime. Both
+        // arrays are built with exactly easeDimensions entries, which is what
+        // After Effects expects; the cast narrows for the compiler only.
+        prop.setTemporalEaseAtKey(
+          k1,
+          prop.keyInTemporalEase(k1) as [KeyframeEase],
+          easeOutArr as [KeyframeEase]
+        );
+        prop.setTemporalEaseAtKey(
+          k2,
+          easeInArr as [KeyframeEase],
+          prop.keyOutTemporalEase(k2) as [KeyframeEase]
+        );
+        eased++;
+      }
+    });
+  } catch (e: any) {
+    failure = e && e.message ? e.message : "unknown error";
+  }
+  app.endUndoGroup();
+
+  if (failure !== "") {
+    return { ok: false, message: "Apply graph failed: " + failure };
+  }
+  if (eased === 0) {
+    return {
+      ok: false,
+      message: "Nothing to ease. Select at least two keyframes on one property.",
+    };
+  }
+  return {
+    ok: true,
+    message:
+      "Eased " + eased + (eased === 1 ? " keyframe pair." : " keyframe pairs."),
+  };
+};

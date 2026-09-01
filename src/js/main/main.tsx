@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AutoTwixtor } from "./components/AutoTwixtor";
 import { DuplicateFrames } from "./components/DuplicateFrames";
+import { GraphEditor } from "./components/GraphEditor";
 import { ProjectUtilities } from "./components/ProjectUtilities";
 import "./main.scss";
 
@@ -25,7 +26,7 @@ type Tab = {
 // until parity is reached - reordering is its own commit afterwards.
 const TABS: Tab[] = [
   { id: "tab-twixtor", label: "Twixtor", step: "done" },
-  { id: "tab-graph", label: "Graph", step: "step 05" },
+  { id: "tab-graph", label: "Graph", step: "done" },
   { id: "tab-presets", label: "Presets", step: "step 06" },
   { id: "tab-render", label: "Render", step: "step 07" },
   { id: "tab-library", label: "Library", step: "step 08" },
@@ -123,6 +124,8 @@ export const App = () => {
                   <DuplicateFrames />
                   <AutoTwixtor />
                 </>
+              ) : tab.id === "tab-graph" ? (
+                <GraphEditor />
               ) : tab.id === "tab-render" ? (
                 <ProjectUtilities />
               ) : (
