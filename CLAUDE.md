@@ -60,24 +60,35 @@ yarn build — build + create symlink into the CEP extensions folder
 yarn dev   — hot reload development mode
 yarn zxp   — package as ZXP for installation
 
-## Verify the tree matches the commit message
+## Never chain an edit and a commit in one shell invocation
 
-After any commit whose changes were applied by a shell chain (`&&`-joined
-commands, a heredoc script, a loop), check the working tree against what the
-commit message claims before moving on.
+Write the edit. **Stop.** Check the tree in a separate command. Commit in a
+third. Do not join those steps with `&&`, `;`, or a heredoc that ends in a
+`git commit`.
 
-If a chain breaks partway — a merge conflict, a failed assertion, a non-zero
-exit — every later command is skipped silently. `git commit` still succeeds on
-whatever did land, so you get a plausible commit describing work that is not
-there, and no error anywhere.
+The reason is mechanical. A broken chain skips everything after the break —
+silently. But `git add -A && git commit` is not skipped when the break is a
+Python `AssertionError` on a stale anchor, because that failure happens inside
+the heredoc and the shell moves on. The result is a commit whose message
+describes work the tree does not contain, with no error anywhere and exit 0.
 
-This has happened: a commit adding a dev-only licensing bypass shipped the
-release guard and the CSS but none of the four source edits that made the flag
-do anything, because the chain stopped at a merge conflict. The flag looked
-functional and did nothing.
+This has happened three times:
 
-Cheapest guard: `grep` for the thing the message claims, in the file it claims
-to be in. For a build-time flag, check the built bundle, not just the source.
+- a commit adding a dev-only licensing bypass shipped the release guard and the
+  CSS but none of the four source edits that made the flag do anything;
+- a merge conflict stopped a chain, so four wiring edits never ran while the
+  commit that followed them did;
+- a post-parity summary commit claimed a table of completed items and their
+  commits that had failed to write.
+
+Each was caught only by checking afterwards. **Describing the symptom did not
+prevent it — separating the steps does**, because a commit that is its own
+invocation cannot inherit a failure from an edit that never ran.
+
+**What to check between the two steps:** grep for the thing the message claims,
+in the file it claims to be in. For a build-time flag or a token, check the
+built bundle rather than the source — Vite can eliminate a branch entirely, and
+SCSS can compile a variable away.
 
 ## Conventions
 
