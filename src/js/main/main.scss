@@ -1064,6 +1064,51 @@ body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !im
   margin-bottom: 5px;
 }
 
+// Brand palette presets. A fixed row, visually distinct from the six user
+// slots below it so the two are not mistaken for one another: chips carry a
+// swatch and are never renamed or written to.
+.palette-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.palette-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 4px;
+  font-size: 10px;
+  color: var(--ink-2);
+  background: var(--raised);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    color: var(--ink);
+  }
+
+  // Selection is carried by the border and full-strength ink, not by a fill:
+  // a filled chip would put the accent on screen as decoration, and the
+  // swatch already shows what the palette looks like.
+  &.active {
+    color: var(--ink);
+    border-color: var(--accent);
+  }
+}
+
+.palette-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid;
+  flex: none;
+}
+
 .outline-btn.dashed {
   flex: 1;
   font-size: 10px;

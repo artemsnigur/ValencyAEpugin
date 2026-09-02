@@ -1,57 +1,84 @@
-// Theme tokens, ported from the deobfuscated 1.4.0 build
+// Design tokens - direction B, "Quiet Surfaces"
 //
-// These MUST stay CSS custom properties. applyThemeConfig() in the shipped
-// panel rewrites several of them at runtime from a stored config; that lands in
-// step 09. SCSS variables hold the default values only - they compile away, so
-// nothing downstream may reference them. Style against var(--token), never
-// against $default-*.
+// Hierarchy comes from spacing, weight and small tone steps. No gradients, no
+// glow, no blur. The accent marks state - active, selected, focused - and is
+// never used as decoration.
 //
-// PROVENANCE - the shipped panel has two competing sets of defaults, and these
-// are not the stylesheet's:
+// These MUST stay CSS custom properties: the theme layer rewrites them at
+// runtime when the palette, accent or radius changes. The SCSS variables below
+// hold default values only - they compile away, so nothing downstream may
+// reference them. Style against var(--token), never against $default-*.
 //
-//   loadTheme() at main.js:1161 runs on every load and overwrites the
-//   stylesheet, so its defaults are what a user with empty storage actually
-//   sees. The four tokens below marked "loadTheme" take their values from
-//   there, not from style.css :root, which declares a blue scheme nobody has
-//   ever seen (#1e1e1e / #4d7ea8 / #2c4f6b / 4px radius).
-//
-//   Step 09 owns these four: porting loadTheme() means moving these values into
-//   it and reading the stored config over the top. Nothing here needs undoing.
-//
-// Everything else comes from style.css :root, which loadTheme never touches.
+// ---------------------------------------------------------------------------
+// The values are the Olive palette, sampled from the Valency brand artwork.
+// They are duplicated from PALETTES[olive] in
+// src/js/main/components/palettes.ts on purpose: this stylesheet is what paints
+// the panel in the frame before any script has run, so the default has to exist
+// in CSS as well as in TypeScript. Change one, change the other - palettes.ts
+// carries the note on where the numbers came from and why they may move.
+// ---------------------------------------------------------------------------
 
-// --- from loadTheme() main.js:1161 ---
-$default-bg-color: #121212;
-$default-grad-start: #ff007f;
-$default-grad-end: #7f00ff;
-$default-radius: 12px;
+// --- Surface ramp ---
+$default-ground: #131311;
+$default-surface: #1e1e1a;
+$default-raised: #282824;
+$default-rule: #3b3b35;
 
-// --- from style.css :root ---
-$default-panel-bg: rgba(255, 255, 255, 0.035);
-$default-text-color: #d4d4d4;
-$default-grad-angle: 135deg;
-$default-glow: rgba(77, 126, 168, 0.18);
+// --- Ink ---
+$default-ink: #e9e9e7;
+$default-ink-2: #afb0ab;
+$default-ink-3: #7a7b75;
+
+// --- Accent ---
+$default-accent: #b9b9a0;
+$default-accent-dim: #373830;
+
+// --- Shape ---
+$default-radius: 3px; // near-square; rounded corners are a decorative reflex
 
 :root {
   color-scheme: dark;
 
-  --bg-color: #{$default-bg-color}; // loadTheme
-  --grad-start: #{$default-grad-start}; // loadTheme
-  --grad-end: #{$default-grad-end}; // loadTheme
-  --radius: #{$default-radius}; // loadTheme
+  // The ramp steps are small, which reads clearly at the dark end and is why
+  // panels here need no border. It does not survive inversion: measured on a
+  // pale ground the same two steps give a surface-to-ground contrast of 1.1:1,
+  // which is invisible. A light mode would need its own ramp and a rule on
+  // every panel, so it is a separate design rather than a palette swap - not a
+  // variant of this one.
+  --ground: #{$default-ground};
+  --surface: #{$default-surface};
+  --raised: #{$default-raised};
+  --rule: #{$default-rule};
 
-  --panel-bg: #{$default-panel-bg};
-  --text-color: #{$default-text-color};
-  --grad-angle: #{$default-grad-angle};
+  // Three ink levels. --ink-3 is the floor: below it contrast against
+  // --surface drops under 3:1 and small labels stop being readable.
+  --ink: #{$default-ink};
+  --ink-2: #{$default-ink-2};
+  --ink-3: #{$default-ink-3};
 
-  // Pre-JS value only. The theme layer derives --glow from --grad-start with a
-  // "66" alpha suffix on every apply, so once the panel has mounted the glow
-  // tracks the gradient. (An earlier note here called this a bug; it is not -
-  // updateTheme() has always kept the two in step.)
-  --glow: #{$default-glow};
+  --accent: #{$default-accent};
+  --accent-dim: #{$default-accent-dim};
 
+  --radius: #{$default-radius};
+
+  // ---------------------------------------------------------------------------
+  // Compatibility aliases.
+  //
+  // The panel is converted to B one tab at a time. Rather than leave half of it
+  // on the old pink-to-purple scheme while that happens, the old token names
+  // are derived from the new ones, so every surface picks up the new colours at
+  // once and the work left in each tab is structure and spacing.
+  //
+  // --grad-start and --grad-end resolve to the same colour, so every remaining
+  // gradient renders as a flat accent fill. --glow resolves to transparent, so
+  // every remaining glow disappears. Both are deleted for real as each tab is
+  // converted, and this block goes with the last of them.
+  // ---------------------------------------------------------------------------
+  --bg-color: var(--ground);
+  --panel-bg: var(--surface);
+  --text-color: var(--ink);
+  --grad-start: var(--accent);
+  --grad-end: var(--accent);
+  --grad-angle: 0deg;
+  --glow: transparent;
 }
-
-// NOT ported: style.css also carried a [data-theme="light"] block, but nothing
-// in main.js or index.html ever sets that attribute - it is dead in the shipped
-// build. If a light theme is wanted, step 09 owns it.

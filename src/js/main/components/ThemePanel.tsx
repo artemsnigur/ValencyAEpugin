@@ -14,11 +14,12 @@ import {
   readSlot,
   readSlotName,
   resetAll,
+  resolvePalette,
   set,
-  setToken,
   writeSlot,
   writeSlotName,
 } from "./themeStore";
+import { PALETTES } from "./palettes";
 
 const SLOTS = [1, 2, 3, 4, 5, 6];
 /**
@@ -118,7 +119,7 @@ export const ThemePanel = () => {
               className="outline-btn pop-anim theme-slot"
               style={
                 activeSlot === String(n)
-                  ? { borderColor: config.gradStart }
+                  ? { borderColor: resolvePalette(config).accent }
                   : undefined
               }
               onClick={() => clickSlot(n)}
@@ -143,18 +144,57 @@ export const ThemePanel = () => {
           </button>
         </div>
 
-        <h3 style={{ textAlign: "center" }}>UI Settings</h3>
+        <h3 style={{ textAlign: "center" }}>Palette</h3>
+        <p className="panel-hint" style={{ marginBottom: "6px" }}>
+          Brand palettes. These are presets, not slots - the six above stay yours.
+        </p>
+
+        <div className="palette-row">
+          {PALETTES.map((p) => (
+            <button
+              key={p.id}
+              className={`palette-chip${config.palette === p.id ? " active" : ""}`}
+              onClick={() => {
+                // Switching palette drops any accent override: the override
+                // was chosen against the old palette's ground, and carrying it
+                // across is how a scheme ends up half one palette and half
+                // another.
+                const next = { ...config, palette: p.id, accent: "" };
+                setConfig(next);
+                applyConfig(next);
+                persistConfig(next);
+              }}
+            >
+              <span
+                className="palette-swatch"
+                style={{ background: p.accent, borderColor: p.rule }}
+              />
+              {p.name}
+            </button>
+          ))}
+        </div>
+
+        <h3 style={{ textAlign: "center", marginTop: "15px" }}>UI Settings</h3>
 
         <div className="align-row">
-          <span className="row-label">Bg Color:</span>
+          <span className="row-label">Accent:</span>
           <input
             type="color"
-            value={config.bgColor}
-            onChange={(e) => update("bgColor", e.target.value)}
+            value={resolvePalette(config).accent}
+            onChange={(e) => update("accent", e.target.value)}
           />
+          {config.accent ? (
+            <button
+              className="outline-btn pop-anim"
+              style={{ fontSize: "11px", marginLeft: "6px" }}
+              onClick={() => update("accent", "")}
+            >
+              Reset
+            </button>
+          ) : null}
           <span className="row-label" style={{ marginLeft: "10px" }}>Radius:</span>
           <input
-            type="range" min="0" max="20" style={{ flex: 1 }}
+            type="range" min="0" max="12" style={{ flex: 1 }}
             value={config.radius}
             onChange={(e) => update("radius", e.target.value)}
           />
@@ -171,27 +211,6 @@ export const ThemePanel = () => {
             <option value="glow">Liquid Glass</option>
           </select>
         ))}
-
-        <div className="align-row">
-          <span className="row-label">Colors:</span>
-          <input
-            type="color"
-            value={config.gradStart}
-            onChange={(e) => update("gradStart", e.target.value)}
-          />
-          <input
-            type="color" style={{ marginRight: "auto" }}
-            value={config.gradEnd}
-            onChange={(e) => update("gradEnd", e.target.value)}
-          />
-        </div>
-
-        <div className="flex-buttons" style={{ marginTop: "10px", marginBottom: "15px" }}>
-          <button className="outline-btn pop-anim" style={{ fontSize: "11px", flex: 1 }}
-            onClick={() => update("angle", "135deg")}>↘ Diagonal (L-R)</button>
-          <button className="outline-btn pop-anim" style={{ fontSize: "11px", flex: 1 }}
-            onClick={() => update("angle", "-135deg")}>↙ Diagonal (R-L)</button>
-        </div>
 
         <h3 style={{ textAlign: "center", marginTop: "15px" }}>Preferences</h3>
 

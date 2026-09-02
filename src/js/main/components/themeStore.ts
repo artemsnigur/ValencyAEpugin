@@ -1,41 +1,40 @@
 /**
  * Theme tokens and persistence.
  *
- * Every value is stored as a **string**, because the shipped panel read them
- * straight off input `.value` and wrote them to localStorage unconverted. Both
- * panels share these keys, so the shapes have to match exactly for a theme
- * saved in one to load in the other.
+ * Every value is stored as a **string**: the panel reads them straight off
+ * input `.value` and writes them back unconverted, and keeping one type across
+ * the boundary removes a class of bug where a slot round-trips to a number.
  */
+import { DEFAULT_PALETTE_ID, Palette, paletteById } from "./palettes";
+
 /**
  * Slot payload version.
  *
- * Added while it is still free to: slots live under a Valency key, the rebrand
- * took no migration path from the old product, so nobody outside this machine
- * has one. That window closes the day the first copy ships.
+ * 1 - the ported 1.4.0 shape: bgColor, gradStart, gradEnd, radius, angle, anim.
+ * 2 - direction B: a palette id plus an optional accent override. The gradient
+ *     is gone, so gradEnd and angle no longer describe anything, and the ground
+ *     comes from the palette rather than being picked freely.
  *
- * A slot written before this field existed reads as version 1. Bump when the
- * shape changes and branch on the value rather than guessing from which keys
- * happen to be present.
+ * A slot with no version field predates the field, which means version 1.
+ * migrateSlot() below carries it forward rather than discarding it.
  */
-export const SLOT_VERSION = 1;
+export const SLOT_VERSION = 2;
 
 export type ThemeConfig = {
-  bgColor: string;
-  gradStart: string;
-  gradEnd: string;
+  /** Palette id from PALETTES. */
+  palette: string;
+  /** Accent override. Empty string means "use the palette's own accent". */
+  accent: string;
+  /** Corner radius in px, without the unit. */
   radius: string;
-  angle: string;
+  /** Press-animation id, read by body[data-anim]. */
   anim: string;
 };
 
-/** Same key names the shipped panel uses - format compatibility, not shared
-    state; the two extensions have different origins. */
 export const K = {
-  bgColor: "valency.theme.bg-color",
-  gradStart: "valency.theme.grad-start",
-  gradEnd: "valency.theme.grad-end",
+  palette: "valency.theme.palette",
+  accent: "valency.theme.accent",
   radius: "valency.theme.radius",
-  angle: "valency.theme.grad-angle",
   anim: "valency.theme.anim",
   audioVolume: "valency.theme.audio-volume",
   renderPrefix: "valency.render.prefix",
@@ -45,13 +44,23 @@ export const K = {
   slotName: (n: number) => `valency.theme.slot-name-${n}`,
 };
 
-/** loadTheme()'s own fallbacks, main.js:1161. */
+/**
+ * Keys written by the version 1 theme model.
+ *
+ * Read once during migration, then cleared. They are listed here rather than
+ * inline so that nothing has to guess later which keys were ours.
+ */
+const LEGACY_K = {
+  bgColor: "valency.theme.bg-color",
+  gradStart: "valency.theme.grad-start",
+  gradEnd: "valency.theme.grad-end",
+  angle: "valency.theme.grad-angle",
+};
+
 export const DEFAULTS: ThemeConfig = {
-  bgColor: "#121212",
-  gradStart: "#ff007f",
-  gradEnd: "#7f00ff",
-  radius: "12",
-  angle: "135deg",
+  palette: DEFAULT_PALETTE_ID,
+  accent: "",
+  radius: "3",
   anim: "pop",
 };
 
@@ -80,45 +89,45 @@ const remove = (key: string) => {
 };
 
 export const loadConfig = (): ThemeConfig => ({
-  bgColor: get(K.bgColor, DEFAULTS.bgColor),
-  gradStart: get(K.gradStart, DEFAULTS.gradStart),
-  gradEnd: get(K.gradEnd, DEFAULTS.gradEnd),
+  palette: get(K.palette, DEFAULTS.palette),
+  accent: get(K.accent, DEFAULTS.accent),
   radius: get(K.radius, DEFAULTS.radius),
-  angle: get(K.angle, DEFAULTS.angle),
   anim: get(K.anim, DEFAULTS.anim),
 });
 
-/**
- * Write one token.
- *
- * --glow is derived from --grad-start with a `66` alpha suffix, exactly as
- * updateTheme() did. It is NOT a stale value: the shipped panel keeps the glow
- * in step with the gradient through this same derivation on every apply.
- */
+/** Resolve a config to the palette it paints with, accent override applied. */
+export const resolvePalette = (config: ThemeConfig): Palette => {
+  const base = paletteById(config.palette);
+  return config.accent ? { ...base, accent: config.accent } : base;
+};
+
 export const setToken = (name: string, value: string) => {
-  const root = document.documentElement;
-  root.style.setProperty(name, value);
-  if (name === "--grad-start") {
-    root.style.setProperty("--glow", `${value}66`);
-  }
+  document.documentElement.style.setProperty(name, value);
 };
 
 /** Apply a config to the document. Pure token writes, no React involved. */
 export const applyConfig = (config: ThemeConfig) => {
-  setToken("--bg-color", config.bgColor);
-  setToken("--grad-start", config.gradStart);
-  setToken("--grad-end", config.gradEnd);
+  const p = resolvePalette(config);
+  setToken("--ground", p.ground);
+  setToken("--surface", p.surface);
+  setToken("--raised", p.raised);
+  setToken("--rule", p.rule);
+  setToken("--ink", p.ink);
+  setToken("--ink-2", p.ink2);
+  setToken("--ink-3", p.ink3);
+  setToken("--accent", p.accent);
+  // Left at the palette's own value when the accent is overridden: it is a
+  // panel-weight fill behind accent text, and deriving it from an arbitrary
+  // user colour is the kind of automatic ramp this design replaced.
+  setToken("--accent-dim", p.accentDim);
   setToken("--radius", `${config.radius}px`);
-  setToken("--grad-angle", config.angle);
   document.body.setAttribute("data-anim", config.anim);
 };
 
 export const persistConfig = (config: ThemeConfig) => {
-  set(K.bgColor, config.bgColor);
-  set(K.gradStart, config.gradStart);
-  set(K.gradEnd, config.gradEnd);
+  set(K.palette, config.palette);
+  set(K.accent, config.accent);
   set(K.radius, config.radius);
-  set(K.angle, config.angle);
   set(K.anim, config.anim);
 };
 
@@ -130,20 +139,77 @@ export const persistConfig = (config: ThemeConfig) => {
  * user's theme landed. Running this at module scope in the entry file applies
  * the tokens before anything renders.
  */
-export const applyStoredTheme = () => applyConfig(loadConfig());
+export const applyStoredTheme = () => {
+  migrateLegacyConfig();
+  applyConfig(loadConfig());
+};
 
-type StoredSlot = ThemeConfig & { version?: number };
+/**
+ * Carry a version 1 top-level config forward, once.
+ *
+ * Only the accent survives: it is the one value in the old model the user
+ * chose directly. bgColor, gradEnd and angle described a gradient over a
+ * free-picked ground, and neither of those exists here.
+ *
+ * Runs before the first applyConfig so the migrated accent is what paints,
+ * rather than the default being shown and replaced a frame later.
+ */
+const migrateLegacyConfig = () => {
+  try {
+    if (localStorage.getItem(K.palette) !== null) return; // already on v2
+    const gradStart = localStorage.getItem(LEGACY_K.gradStart);
+    if (gradStart === null) return; // nothing stored; defaults apply
+    set(K.palette, DEFAULTS.palette);
+    set(K.accent, gradStart);
+    [LEGACY_K.bgColor, LEGACY_K.gradStart, LEGACY_K.gradEnd, LEGACY_K.angle]
+      .forEach(remove);
+  } catch {
+    // Storage unavailable: defaults apply, which is the correct outcome.
+  }
+};
+
+type StoredSlotV1 = {
+  version?: number;
+  bgColor?: string;
+  gradStart?: string;
+  gradEnd?: string;
+  angle?: string;
+  radius?: string;
+  anim?: string;
+};
+
+type StoredSlotV2 = ThemeConfig & { version: number };
+
+/**
+ * Bring a stored slot up to the current shape.
+ *
+ * A named slot is an explicit user choice, so its accent is preserved even
+ * though the rest of the version 1 payload describes a design that no longer
+ * exists. The palette falls back to the default; there is no honest way to
+ * infer which of the three a pre-redesign slot would have wanted.
+ */
+const migrateSlot = (parsed: StoredSlotV1 & Partial<StoredSlotV2>): ThemeConfig => {
+  if (parsed.version === SLOT_VERSION) {
+    return {
+      palette: parsed.palette ?? DEFAULTS.palette,
+      accent: parsed.accent ?? DEFAULTS.accent,
+      radius: parsed.radius ?? DEFAULTS.radius,
+      anim: parsed.anim ?? DEFAULTS.anim,
+    };
+  }
+  return {
+    palette: DEFAULTS.palette,
+    accent: parsed.gradStart ?? DEFAULTS.accent,
+    radius: parsed.radius ?? DEFAULTS.radius,
+    anim: parsed.anim ?? DEFAULTS.anim,
+  };
+};
 
 export const readSlot = (n: number): ThemeConfig | null => {
   try {
     const raw = localStorage.getItem(K.slot(n));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredSlot;
-    // Unversioned means it predates the field, which is version 1. There is no
-    // version 2 yet, so nothing branches on it - the point is that when there
-    // is, the answer is stored rather than inferred.
-    const { version: _version, ...config } = parsed;
-    return config as ThemeConfig;
+    return migrateSlot(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -155,11 +221,11 @@ export const writeSlot = (n: number, config: ThemeConfig) =>
 export const readSlotName = (n: number) => get(K.slotName(n), `Slot ${n}`);
 export const writeSlotName = (n: number, name: string) => set(K.slotName(n), name);
 
-/** Clear theme keys. */
+/** Clear theme keys. Slots and slot names are the user's and are left alone. */
 export const resetAll = () => {
   [
-    K.bgColor, K.gradStart, K.gradEnd, K.radius, K.angle, K.anim,
-    K.lastSlot,
+    K.palette, K.accent, K.radius, K.anim, K.lastSlot,
+    LEGACY_K.bgColor, LEGACY_K.gradStart, LEGACY_K.gradEnd, LEGACY_K.angle,
   ].forEach(remove);
 };
 
