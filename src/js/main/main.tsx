@@ -65,7 +65,13 @@ export const App = () => {
   // Measure the active button and slide the highlight under it. Same geometry
   // as updateActiveBg() in the shipped panel: width from the button, offset
   // from its position within the nav bar.
-  const positionIndicator = useCallback(() => {
+  //
+  // `animate` is the whole point. The indicator carries a 0.4s transition so it
+  // slides between tabs, but a resize drives this many times a second - and
+  // each write restarts that transition from wherever the last one had reached,
+  // so it chases the tab and only arrives ~400ms after you stop dragging. On
+  // resize the write is made with transitions suppressed, so it tracks exactly.
+  const positionIndicator = useCallback((animate = true) => {
     const btn = btnRefs.current[activeTab];
     const nav = navRef.current;
     const indicator = indicatorRef.current;
@@ -81,12 +87,21 @@ export const App = () => {
     // where it is rather than collapsing it.
     if (width === 0) return;
 
+    if (!animate) indicator.style.transition = "none";
     indicator.style.width = `${width}px`;
     indicator.style.transform = `translateX(${left}px)`;
     indicator.style.opacity = "1";
+    if (!animate) {
+      // Flush the un-transitioned write before re-enabling, or restoring the
+      // transition in the same frame would animate from the old position after
+      // all.
+      void indicator.offsetHeight;
+      indicator.style.transition = "";
+    }
   }, [activeTab]);
 
-  useLayoutEffect(positionIndicator, [positionIndicator]);
+  // Tab changes animate; that is the slide the indicator exists for.
+  useLayoutEffect(() => positionIndicator(true), [positionIndicator]);
 
   // Forward undo/redo to After Effects while the panel has focus.
   //
@@ -126,7 +141,7 @@ export const App = () => {
   useEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
-    const observer = new ResizeObserver(positionIndicator);
+    const observer = new ResizeObserver(() => positionIndicator(false));
     observer.observe(nav);
     return () => observer.disconnect();
   }, [positionIndicator]);
