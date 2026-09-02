@@ -249,7 +249,7 @@ localised install.
 
 # Batch 2 (pending) — steps 06+
 
-## [ ] 06 — Preset browser: scan and apply
+## [x] 06 — Preset browser: scan and apply
 
 **Setup:** a real preset tree — a root folder with several subfolders, `.ffx`
 files in each.
@@ -304,7 +304,7 @@ see the note below. **A failure in apply** points at the argument order into
 > **Note for step 07:** `saveRenderPathsAE` is the other half of this. It is a
 > host function whose only job is writing a key nobody reads.
 
-## [ ] 06 — Preset browser: guard paths
+## [x] 06 — Preset browser: guard paths
 
 **Steps:** apply a preset with no comp open. With a comp but no layer selected,
 apply with Apply=Selected, and again with Time=Match.
@@ -314,7 +314,7 @@ to." / "Select a layer to match the duration against." — all in the panel, no
 `alert()`, and **no stray "Apply Preset" entry in Edit > Undo History**. The
 original had no `try` around this body at all, so a throw left the group open.
 
-## [ ] 06 — Preset browser: layer colour
+## [x] 06 — Preset browser: layer colour
 
 The Layer Clr dropdown lives in the **theme tab**, which lands in step 09. Until
 then this reads `localStorage["layer-color"]` directly, defaulting to 1 (Red) —
@@ -330,7 +330,7 @@ Clr dropdown sets it for you, which is the better way to run this.
 **Correct:** the created layer takes that label colour. If it is always red,
 the key is not being read.
 
-## [ ] 06 — Preset browser: Save
+## [x] 06 — Preset browser: Save
 
 **Steps:** select some animated properties on a layer, click Save, save the
 preset into the current root.
@@ -345,7 +345,7 @@ list refreshes to include the new preset without reopening the panel.
 > localised AE if you have one; if 3075 is wrong there, nothing can be done
 > beyond telling the user.
 
-## [ ] 07 — Render: the stray "Temp" comp (check this first)
+## [x] 07 — Render: the stray "Temp" comp (check this first)
 
 **You may already have one from the shipped panel.** Its `getSystemTemplates`
 fabricated a comp named `Temp` plus a render queue item to read the output
@@ -358,7 +358,7 @@ any throw left both behind, silently.
 **If you find one, it is ours, not yours.** Safe to delete. The port removes
 both in a `finally`, so it cannot happen again.
 
-## [ ] 07 — Render: the project no longer gets dirtied on every visit
+## [x] 07 — Render: the project no longer gets dirtied on every visit
 
 `Project.dirty` is read-only with no way to reset it, so the old behaviour was
 permanent: opening the Render tab modified the project and you got an
@@ -376,7 +376,7 @@ clean. Only a first-ever run with an empty cache, or pressing ⟳, pays the cost
 **⟳ always pays it** — that is deliberate. Press it and the project will be
 marked modified if the queue is empty.
 
-## [ ] 07 — Render: templates stay current
+## [x] 07 — Render: templates stay current
 
 Output module templates live in AE's preferences, not the project, so a cache
 cannot know about one added elsewhere.
@@ -390,7 +390,7 @@ until you press ⟳; that is the documented trade.
 The cache is keyed to the AE version, so upgrading should show a fresh read
 rather than a stale list.
 
-## [ ] 07 — Render: the render itself
+## [x] 07 — Render: the render itself
 
 **Setup:** a comp, a valid output template, and a destination folder.
 
@@ -410,7 +410,7 @@ deliberate. The render, the project save and the cache purge are not undoable
 operations, and an undo group spanning `app.project.save()` would offer to walk
 you back past a state already written to disk.
 
-## [ ] 07 — Render: prefix with regex characters
+## [x] 07 — Render: prefix with regex characters
 
 **Steps:** set the render prefix (theme tab, or `localStorage["render-prefix"]`)
 to something containing brackets or a dot — `shot(a)` or `v1.5` — and render
@@ -421,7 +421,7 @@ first. In the shipped panel `shot(a)` threw an uncaught invalid-regex error and
 `v1.5` matched the wrong files, because the prefix went into a `RegExp`
 unescaped.
 
-## [ ] 07 — Render: misconfigured click keeps your queue
+## [x] 07 — Render: misconfigured click keeps your queue
 
 **Steps:** queue up some render items by hand. Turn on "Render to specific
 folder" but leave the selected destination unset. Click RENDER.
@@ -430,7 +430,7 @@ folder" but leave the selected destination unset. Click RENDER.
 there**. The original removed every QUEUED item first and only then discovered
 the destination was missing.
 
-## [ ] 08 — Library: browsing, tabs and breadcrumbs
+## [x] 08 — Library: browsing, tabs and breadcrumbs
 
 **Setup:** a real media library — nested folders, several hundred files in at
 least one of them, a mix of video, image, audio and unsupported types.
@@ -454,7 +454,7 @@ Node `readdirSync(..., { withFileTypes: true })`. It should feel the same or
 faster; if it is noticeably slower, the `withFileTypes` path is failing and the
 per-entry `statSync` fallback is running.
 
-## [ ] 08 — Library: import
+## [x] 08 — Library: import
 
 **Steps:** double-click a video, an image, an audio file and an unsupported
 file. Click the download badge on a folder containing an image sequence.
@@ -468,7 +468,7 @@ appearing to do nothing.
 so a folder where every sequence failed still looked successful. Failures are
 counted and reported now — "Imported 2 sequences. 1 failed."
 
-## [ ] 08 — Library: media lifecycle on a big folder
+## [x] 08 — Library: media lifecycle on a big folder
 
 The question this step was meant to answer. Findings, and what to confirm:
 
@@ -497,7 +497,7 @@ rises, the observer is not releasing.
 > 5) that is indistinguishable from still loading. Narrowing the band or
 > capping concurrent videos would fix it; both are post-parity.
 
-## [ ] 08 — Library: cache behaviour
+## [x] 08 — Library: cache behaviour
 
 **Steps:** set a cache folder. Browse into a folder. Add a file to it outside
 the panel and revisit. Rename a file outside the panel and revisit. **Overwrite
@@ -510,7 +510,7 @@ see POST-PARITY.md item 4.
 A half-written or corrupt `cache_*.json` should fall back to a full rescan
 rather than showing an error — the parse is guarded.
 
-## [ ] 09 — Theme: no flash of defaults on open
+## [x] 09 — Theme: no flash of defaults on open
 
 **Divergence from the shipped panel, deliberate.** The original called
 `loadTheme()` from `window.onload`, which fires after first paint, so it
@@ -524,7 +524,7 @@ different gradient), then close and reopen the panel. Watch the first frame.
 default-then-yours flash. The shipped panel will still flash — that is the
 difference, not a fault.
 
-## [ ] 09 — Theme: slot storage is format-compatible
+## [x] 09 — Theme: slot storage is format-compatible
 
 *(Rewritten. This was written as "slots are shared with the shipped panel" and
 tested by saving in one and loading in the other — which only works if
@@ -546,7 +546,7 @@ merges over the defaults rather than failing. **If the two panels turn out to
 share storage after all (L0), the copy step is unnecessary** and slots appear in
 both automatically.
 
-## [ ] 09 — Theme: every control applies AND persists
+## [x] 09 — Theme: every control applies AND persists
 
 The failure this checks for is a setting that applies but does not survive a
 reload, or saves but does not apply.
@@ -565,7 +565,7 @@ and apply an Adj preset from the Presets tab — the layer takes that colour. Se
 Prefix and render — the filename uses it. Set Volume and play an audio file in
 the Library tab.
 
-## [ ] 09 — Theme: background video
+## [x] 09 — Theme: background video
 
 **Steps:** choose a video background. Scrub the Time slider. Switch to an image
 background, then Clear.
@@ -575,7 +575,7 @@ those sliders, and the Time slider moves its start frame. Switching to an image
 or clearing **stops and releases it** — the original left a stale `src` on the
 element.
 
-## [ ] 09 — Theme: two controls that do nothing (expected)
+## [x] 09 — Theme: two controls that do nothing (expected)
 
 Both ported faithfully and queued in POST-PARITY.md; **not** faults of the port.
 
@@ -587,7 +587,7 @@ Both ported faithfully and queued in POST-PARITY.md; **not** faults of the port.
 
 ---
 
-## [ ] Rebrand — storage renamed with no migration
+## [x] Rebrand — storage renamed with no migration
 
 Every stored name moved to Valency naming and **nothing reads the old names**.
 There is no fallback and no migration, deliberately: this product is standalone
@@ -622,7 +622,7 @@ Every tab renders with defaults and accepts new values that then persist.
 
 # Post-parity checks
 
-## [ ] P1 — Cmd+Z and Cmd+Shift+Z reach After Effects
+## [x] P1 — Cmd+Z and Cmd+Shift+Z reach After Effects
 
 Restores something the shipped panel did and the port had lost: with panel
 focus, undo and redo were dead because the panel is a separate process and the
@@ -647,7 +647,7 @@ not undo an edit to a search box.
 landing — check the DevTools console at `localhost:8860`. If AE undoes while
 you are typing in a field, the editable-target guard is not matching.
 
-## [ ] P2 — Library thumbnail size control
+## [x] P2 — Library thumbnail size control
 
 Restores the 2x2 / 3x3 / 4x4 radios the first-generation library UI had. The
 rewrite that replaced it dropped them and deleted their CSS, which is why this
@@ -665,7 +665,7 @@ that is the auto-fit working, not a fault.
 **Default is 3x3**, which is the 110px minimum the grid had hardcoded, so an
 existing library looks unchanged until you touch the control.
 
-## [ ] P3 — Library cache detects in-place overwrites
+## [x] P3 — Library cache detects in-place overwrites
 
 Closes a limitation ported from the shipped panel: staleness was detected by
 comparing entry *names*, so a file overwritten in place kept its name and its
@@ -690,7 +690,7 @@ in-place overwrite. Browse a folder of several hundred files and compare how it
 feels against before. If it is noticeably slower, say so: the fallback would be
 to stat lazily or only on an explicit refresh.
 
-## [ ] P4 — A preview that cannot load says so
+## [x] P4 — A preview that cannot load says so
 
 The shipped panel had no `onError` on its media elements, so a corrupt,
 unreadable or unsupported file rendered as an empty tile — indistinguishable
@@ -712,7 +712,7 @@ surfaces as an error, they will mark themselves. Browse a folder of several
 hundred **videos** and scroll fast — a cluster of broken tiles that recover on
 a second pass is the ceiling, not corrupt files.
 
-## [ ] P5 — Render device dropdown is gone
+## [x] P5 — Render device dropdown is gone
 
 It persisted a choice nothing read. Removed rather than wired: wiring it would
 have made the panel mutate project settings via `gpuAccelType` and brought an
@@ -724,7 +724,7 @@ undo question with it.
 real engine — "Project render engine: CPU · Valency 1.5.0". Reset All Settings
 no longer has a device value to preserve, so nothing about it should look odd.
 
-## [ ] P6 — The three animation variants actually differ
+## [x] P6 — The three animation variants actually differ
 
 The shipped panel's picker offered Classic Pop, Elastic Bounce and Liquid
 Glass, and all three resolved to identical CSS — a menu that lied. They differ
@@ -750,7 +750,7 @@ Calm.
 from `--glow` and `--grad-start`, so it must follow any user theme rather than
 looking right only on the default magenta.
 
-## [ ] P7 — The no-attribute default is unchanged
+## [x] P7 — The no-attribute default is unchanged
 
 **Steps:** on a profile that has never touched the Anim dropdown — clear
 `valency.theme.anim` in DevTools if needed — press buttons and tabs.
@@ -760,7 +760,12 @@ this work. **No scale, no bounce, no glow swell.** Someone who never opened the
 picker did not choose Classic Pop; they have no attribute at all, and should
 see no new motion. Choosing "pop" explicitly is what adds the scale.
 
-## [ ] P8 — Tab highlight tracks correctly during the press animations
+## [x] P8 — Tab highlight tracks correctly during the press animations
+
+> **Superseded by the redesign.** The measured sliding highlight it describes
+> was removed with the direction B tab bar; the active tab is now marked by a
+> pseudo-element on the button itself, so there is no measurement left to drift.
+> R1 below replaces this check. Kept as the record of what was tested.
 
 The sliding highlight used to be measured with `getBoundingClientRect`, which
 reflects CSS transforms. All three variants scale or animate tab buttons, so a
@@ -780,7 +785,7 @@ fast click.
 Glass, which does not scale. If Glass is fine and Elastic is not, the transform
 is still reaching the measurement somehow.
 
-## [ ] P9 — Reduced motion falls back cleanly
+## [x] P9 — Reduced motion falls back cleanly
 
 **Steps:** turn on System Settings › Accessibility › Display › Reduce motion,
 then try all three variants.
@@ -788,3 +793,90 @@ then try all three variants.
 **Correct:** all three collapse to the same static colour-and-brightness
 feedback — no scale, no keyframes, no glow swell. The dropdown still remembers
 your choice; it just has no visible effect while the system setting is on.
+
+---
+
+# Batch 3 — redesign (direction B)
+
+Appended as B lands. Everything above is parity work against the shipped 1.4.0
+build; everything here is deliberately *different* from it, so "it doesn't look
+like the old panel" is the expected result rather than a failure.
+
+## [ ] R1 — The tab bar is correct at every width
+
+Replaces P8. The sliding highlight and its ResizeObserver are gone: the active
+tab's underline is a pseudo-element on the button, so it cannot be measured
+wrong.
+
+**Steps:** drag the panel from as narrow as After Effects allows to as wide as
+your screen allows, slowly, then in fast jerks. Switch tabs at both extremes.
+Dock it, float it, and dock it again. Collapse it and reopen it.
+
+**Correct:** the underline is exactly the width of the active tab at every
+moment of the drag — no lag, no chasing, no arriving 400ms late. At the
+narrowest widths labels truncate with an ellipsis rather than the bar
+overflowing or the gear tab being pushed out.
+
+**Watch for:** the underline sitting one pixel above or below the bar's
+hairline instead of on it.
+
+## [ ] R2 — Palette presets
+
+**Steps:** Theme tab › Palette. Click Olive, Lilac, Mauve in turn, then visit
+every other tab after each.
+
+**Correct:** the whole panel changes colourway — ground, panels, text and
+accent — with no element left on the previous palette. The selected chip is
+marked by its border and full-strength label, not a filled background. Olive is
+what a fresh profile starts on.
+
+**Watch for:** anything still rendering pink or purple. The old gradient tokens
+are aliased to the accent during the conversion, so a stray gradient shows up as
+a flat accent-coloured fill rather than a gradient — that is expected until the
+tab it lives in is converted, and is not a failure.
+
+## [ ] R3 — Accent override and reset
+
+**Steps:** pick a palette, then set a custom Accent with the colour picker. A
+Reset button appears next to it. Press it. Then set a custom accent again and
+switch palette.
+
+**Correct:** the custom accent applies everywhere the accent appears — tab
+underline, selected chip border, active controls. Reset returns to the
+palette's own accent and the button disappears. Switching palette *also* clears
+the override, deliberately: an accent chosen against one ground carried onto
+another is how a scheme ends up half one palette and half another.
+
+## [ ] R4 — A version 1 slot still loads
+
+Only reproducible if you have slots saved before this commit. If you have none,
+mark this N/A rather than passing it.
+
+**Steps:** load each saved slot from before the redesign.
+
+**Correct:** the slot loads without error and takes its accent from what used to
+be its gradient start colour. Its palette is Olive regardless of what it was
+saved with, and its radius and animation carry over. The old background colour,
+gradient end and gradient angle are gone — that is the migration, not a bug.
+
+## [ ] R5 — Nothing flashes on open
+
+**Steps:** set a non-default palette, close the panel, reopen it. Watch the
+first frame — record your screen if you can't catch it.
+
+**Correct:** the panel paints in the stored palette immediately. No frame of
+Olive before the stored one lands, and no frame of the old pink scheme.
+
+**Note:** the CSS default and the TypeScript default are the same values, kept
+in two places on purpose — the stylesheet paints before any script runs. If you
+see a one-frame Olive flash on a non-Olive palette, that is the theme apply
+running late, not the duplication being wrong.
+
+## [ ] R6 — Press animations no longer apply to tabs
+
+**Steps:** with Elastic Bounce selected, click across the tabs, then click any
+ordinary button in a tab.
+
+**Correct:** tab labels change colour and nothing else — no scale, no bounce,
+no brightness swell. Ordinary buttons keep their full animation. The tab bar is
+navigation now, not a row of buttons.

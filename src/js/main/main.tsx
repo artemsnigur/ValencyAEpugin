@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AutoTwixtor } from "./components/AutoTwixtor";
 import { DuplicateFrames } from "./components/DuplicateFrames";
 import { GraphEditor } from "./components/GraphEditor";
@@ -58,51 +58,6 @@ const GearIcon = () => (
 export const App = () => {
   const [activeTab, setActiveTab] = useState<TabId>(TABS[0].id);
 
-  const navRef = useRef<HTMLDivElement>(null);
-  const indicatorRef = useRef<HTMLDivElement>(null);
-  const btnRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
-
-  // Measure the active button and slide the highlight under it. Same geometry
-  // as updateActiveBg() in the shipped panel: width from the button, offset
-  // from its position within the nav bar.
-  //
-  // `animate` is the whole point. The indicator carries a 0.4s transition so it
-  // slides between tabs, but a resize drives this many times a second - and
-  // each write restarts that transition from wherever the last one had reached,
-  // so it chases the tab and only arrives ~400ms after you stop dragging. On
-  // resize the write is made with transitions suppressed, so it tracks exactly.
-  const positionIndicator = useCallback((animate = true) => {
-    const btn = btnRefs.current[activeTab];
-    const nav = navRef.current;
-    const indicator = indicatorRef.current;
-    if (!btn || !nav || !indicator) return;
-
-    // offsetWidth/offsetLeft rather than getBoundingClientRect: these are
-    // layout values and are unaffected by CSS transforms. The press animations
-    // scale tab buttons, and a rect measured mid-press would size the highlight
-    // to the scaled button. offsetParent is the nav bar, which is positioned.
-    const width = btn.offsetWidth;
-    const left = btn.offsetLeft - nav.clientLeft;
-    // A hidden or not-yet-laid-out panel measures zero; leave the highlight
-    // where it is rather than collapsing it.
-    if (width === 0) return;
-
-    if (!animate) indicator.style.transition = "none";
-    indicator.style.width = `${width}px`;
-    indicator.style.transform = `translateX(${left}px)`;
-    indicator.style.opacity = "1";
-    if (!animate) {
-      // Flush the un-transitioned write before re-enabling, or restoring the
-      // transition in the same frame would animate from the old position after
-      // all.
-      void indicator.offsetHeight;
-      indicator.style.transition = "";
-    }
-  }, [activeTab]);
-
-  // Tab changes animate; that is the slide the indicator exists for.
-  useLayoutEffect(() => positionIndicator(true), [positionIndicator]);
-
   // Forward undo/redo to After Effects while the panel has focus.
   //
   // Without this Cmd+Z does nothing here: the panel is a separate CEF process,
@@ -135,27 +90,21 @@ export const App = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // CEP panels are resized by the host, and the panel can be laid out while
-  // hidden, so re-measure on any nav-bar size change rather than on window
-  // resize alone.
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-    const observer = new ResizeObserver(() => positionIndicator(false));
-    observer.observe(nav);
-    return () => observer.disconnect();
-  }, [positionIndicator]);
-
   return (
     <>
-      <div className="nav-bar" ref={navRef}>
-        <div className="active-bg" ref={indicatorRef} />
+      {/*
+        The active tab is marked by an underline drawn as a pseudo-element on
+        the button itself, rather than by a separate element positioned from
+        measured geometry. The old sliding highlight had to be re-measured on
+        every resize, and a docked CEP panel is resized constantly and can be
+        laid out while hidden - so it was a standing source of drift. An
+        underline that belongs to the button cannot drift: it is correct at
+        every width by construction, with no observer and no measurement.
+      */}
+      <div className="nav-bar">
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            ref={(el) => {
-              btnRefs.current[tab.id] = el;
-            }}
             className={[
               "tab-btn",
               tab.iconOnly ? "icon-btn" : "",

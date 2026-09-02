@@ -8,55 +8,60 @@
   z-index: 1;
 }
 
+// The tab bar sits on the ground rather than on a panel of its own, and is
+// separated from the content by a single hairline. One rule instead of a
+// filled pill: the bar stops being an object on the page and becomes an edge.
 .nav-bar {
   display: flex;
-  background: var(--panel-bg);
-  border-radius: var(--radius);
-  padding: 5px;
-  margin-bottom: 15px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 
-// Sliding highlight behind the active tab. Width and translateX are measured
-// and written by the panel at runtime; everything else is styling.
-.active-bg {
-  position: absolute;
-  top: 5px;
-  bottom: 5px;
-  left: 0;
-  width: 0;
-  opacity: 0;
-  background: linear-gradient(
-    var(--grad-angle),
-    var(--grad-start),
-    var(--grad-end)
-  );
-  border-radius: calc(var(--radius) - 4px);
-  box-shadow: 0 4px 12px var(--glow);
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  z-index: 0;
-  pointer-events: none;
-}
-
 .tab-btn {
+  // min-width: 0 lets a flex item shrink below the width of its own text,
+  // which is what makes the ellipsis below reachable. Without it the labels
+  // hold the bar open and a narrow panel overflows instead of truncating.
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
-  color: var(--text-color);
-  padding: 8px 0;
+  color: var(--ink-3);
+  padding: 7px 4px 8px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 11px;
-  opacity: 0.5;
   position: relative;
-  z-index: 1;
-  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease;
+
+  // The underline. Drawn on the button, so it is exactly as wide as the tab at
+  // any panel width with nothing to measure or keep in step. -1px lands it on
+  // the bar's own hairline rather than above it.
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover {
+    color: var(--ink-2);
+  }
 
   &.active {
+    color: var(--ink);
+  }
+
+  &.active::after {
     opacity: 1;
-    color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -97,8 +102,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .active-bg,
   .tab-btn,
+  .tab-btn::after,
   .tab-content {
     transition: none;
     animation: none;
@@ -206,21 +211,18 @@ h3 {
 }
 
 // Shared base. Every variant keeps this; they add to it rather than replace it.
-.pop-anim,
-.tab-btn:not(.active) {
+.pop-anim {
   transition: background-color 0.12s ease, filter 0.12s ease,
     opacity 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease,
     transform 0.09s ease-out;
 }
 
-.pop-anim:not(:disabled):hover,
-.tab-btn:not(.active):hover {
+.pop-anim:not(:disabled):hover {
   filter: brightness(1.08);
   opacity: 0.85;
 }
 
-.pop-anim:not(:disabled):active,
-.tab-btn:not(.active):active {
+.pop-anim:not(:disabled):active {
   filter: brightness(0.95);
 }
 
@@ -230,8 +232,7 @@ h3 {
 //
 // Explicit selection only - see the note above about the no-attribute default.
 
-body[data-anim="pop"] .pop-anim:not(:disabled):active,
-body[data-anim="pop"] .tab-btn:not(.active):active {
+body[data-anim="pop"] .pop-anim:not(:disabled):active {
   transform: scale(1.035);
 }
 
@@ -247,8 +248,7 @@ body[data-anim="pop"] .tab-btn:not(.active):active {
   100% { transform: scale(1); }
 }
 
-body[data-anim="elastic"] .pop-anim:not(:disabled):active,
-body[data-anim="elastic"] .tab-btn:not(.active):active {
+body[data-anim="elastic"] .pop-anim:not(:disabled):active {
   animation: valencyElasticPress 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
@@ -257,14 +257,12 @@ body[data-anim="elastic"] .tab-btn:not(.active):active {
 // brief brightness swell that fades rather than snaps. Both colours come from
 // the theme tokens, so it follows any user theme.
 
-body[data-anim="glow"] .pop-anim,
-body[data-anim="glow"] .tab-btn:not(.active) {
+body[data-anim="glow"] .pop-anim {
   transition: background-color 0.28s ease, filter 0.28s ease,
     opacity 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
 }
 
-body[data-anim="glow"] .pop-anim:not(:disabled):hover,
-body[data-anim="glow"] .tab-btn:not(.active):hover {
+body[data-anim="glow"] .pop-anim:not(:disabled):hover {
   filter: brightness(1.04);
   opacity: 1;
   box-shadow: 0 0 14px var(--glow);
@@ -277,8 +275,7 @@ body[data-anim="glow"] .tab-btn:not(.active):hover {
   100% { box-shadow: 0 0 14px var(--glow); filter: brightness(1.04); }
 }
 
-body[data-anim="glow"] .pop-anim:not(:disabled):active,
-body[data-anim="glow"] .tab-btn:not(.active):active {
+body[data-anim="glow"] .pop-anim:not(:disabled):active {
   animation: valencyGlassSwell 0.42s ease-out;
   transform: none;
 }
@@ -289,13 +286,9 @@ body[data-anim="glow"] .tab-btn:not(.active):active {
 
 @media (prefers-reduced-motion: reduce) {
   .pop-anim:not(:disabled):active,
-  .tab-btn:not(.active):active,
   body[data-anim="pop"] .pop-anim:not(:disabled):active,
-  body[data-anim="pop"] .tab-btn:not(.active):active,
   body[data-anim="elastic"] .pop-anim:not(:disabled):active,
-  body[data-anim="elastic"] .tab-btn:not(.active):active,
-  body[data-anim="glow"] .pop-anim:not(:disabled):active,
-  body[data-anim="glow"] .tab-btn:not(.active):active {
+  body[data-anim="glow"] .pop-anim:not(:disabled):active {
     transform: none;
     animation: none;
   }
