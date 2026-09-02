@@ -1,6 +1,7 @@
 import { fs, path } from "../../lib/cep/node";
 
-export type LibEntry = { name: string; path: string };
+/** `mtime` is epoch milliseconds; absent on entries written before it existed. */
+export type LibEntry = { name: string; path: string; mtime?: number };
 export type FolderListing = { folders: LibEntry[]; files: LibEntry[] };
 export type LibTab = {
   id: number;
@@ -72,8 +73,21 @@ export const listFolder = (dir: string): FolderListing => {
   const push = (name: string, isDir: boolean) => {
     if (name.charAt(0) === ".") return;
     const full = posix(path.join(dir, name));
-    if (isDir) folders.push({ name, path: full });
-    else if (ALLOWED.indexOf(extOf(name)) > -1) files.push({ name, path: full });
+    if (isDir) {
+      folders.push({ name, path: full });
+      return;
+    }
+    if (ALLOWED.indexOf(extOf(name)) === -1) return;
+    // mtime is what makes an in-place overwrite detectable. One extra stat per
+    // file, which is why it is taken for files only and never for folders.
+    let mtime: number | undefined;
+    try {
+      mtime = Math.floor(fs.statSync(full).mtimeMs);
+    } catch {
+      // Unreadable stat just means this entry cannot participate in staleness
+      // detection; the listing itself is still good.
+    }
+    files.push({ name, path: full, mtime });
   };
 
   try {
@@ -153,20 +167,39 @@ export const clearCache = (cacheFolder: string): number => {
 /**
  * Is a cached listing still accurate?
  *
- * KNOWN LIMITATION, ported as-is: this compares names only, exactly as the
- * shipped panel did. A file overwritten in place keeps its name, so a
- * re-rendered clip goes on showing its old preview indefinitely. Comparing
- * mtime as well would close it - see POST-PARITY.md.
+ * Compares names *and* file modification times. The shipped panel compared
+ * names only, so a file overwritten in place kept its name and a re-rendered
+ * clip went on showing its old preview indefinitely.
+ *
+ * Entries cached before mtime existed carry no `mtime`. Those fall back to a
+ * name-only comparison rather than being treated as stale, so an old cache
+ * does not force a full rescan of every folder on first run; it simply gains
+ * overwrite detection as each folder is next refreshed.
  */
 export const listingMatches = (dir: string, cached: FolderListing): boolean => {
   const fresh = listFolder(dir);
-  const join = (l: FolderListing) =>
+
+  const names = (l: FolderListing) =>
     l.folders
       .map((f) => f.name)
       .concat(l.files.map((f) => f.name))
       .sort()
       .join("|");
-  return join(fresh) === join(cached);
+  if (names(fresh) !== names(cached)) return false;
+
+  const cachedTimes = new Map(
+    cached.files.filter((f) => f.mtime !== undefined).map((f) => [f.path, f.mtime])
+  );
+  if (cachedTimes.size === 0) return true; // pre-mtime cache: names only
+
+  for (const file of fresh.files) {
+    const was = cachedTimes.get(file.path);
+    // Unknown on either side means this file predates mtime caching; skip it
+    // rather than declaring the whole folder stale.
+    if (was === undefined || file.mtime === undefined) continue;
+    if (was !== file.mtime) return false;
+  }
+  return true;
 };
 
 export const readJSON = <T,>(key: string, fallback: T): T => {

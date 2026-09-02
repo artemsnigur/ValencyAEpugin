@@ -664,3 +664,28 @@ that is the auto-fit working, not a fault.
 
 **Default is 3x3**, which is the 110px minimum the grid had hardcoded, so an
 existing library looks unchanged until you touch the control.
+
+## [ ] P3 — Library cache detects in-place overwrites
+
+Closes a limitation ported from the shipped panel: staleness was detected by
+comparing entry *names*, so a file overwritten in place kept its name and its
+preview never refreshed.
+
+**Steps:** set a cache folder and browse into a folder of media. Then, outside
+the panel, **overwrite a file in place** — same name, different content, e.g.
+re-render a clip over itself. Revisit the folder.
+
+**Correct:** the preview updates. Also re-check the cases that already worked:
+adding, deleting and renaming a file are all still picked up.
+
+**Old caches:** entries written before this carry no mtime. Those fall back to
+a name-only comparison rather than being treated as stale, so an existing cache
+does not force a full rescan of everything on first run — each folder gains
+overwrite detection the next time it is refreshed. Nothing to clear.
+
+**Watch the cost on a large folder.** This takes one extra `statSync` per file,
+which is the per-entry cost deliberately removed in step 08 — unavoidable here,
+because neither `withFileTypes` nor the directory's own mtime can see an
+in-place overwrite. Browse a folder of several hundred files and compare how it
+feels against before. If it is noticeably slower, say so: the fallback would be
+to stat lazily or only on an explicit refresh.
