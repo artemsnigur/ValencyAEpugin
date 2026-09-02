@@ -1,8 +1,21 @@
 # Post-parity queue
 
-Work deliberately deferred until `src/` reaches feature parity and
-the reference dump is deleted. Each is its own commit. Nothing here blocks a
-migration step.
+**Empty.** Every queued item is done and pushed; VERIFY.md P1-P9 holds the
+checks they need. What remains below is a decision, not work.
+
+| Item | Commit |
+|------|--------|
+| Forward Cmd+Z / Cmd+Shift+Z to After Effects | `f018143` |
+| Restore the library thumbnail size control | `7b7ae85` |
+| Library cache detects in-place overwrites | `138b1cf` |
+| Library previews show when they fail to load | `10e2068` |
+| Remove the render device dropdown | `d23f276` |
+| Give the three animation variants distinct motion | `cc2433b` |
+
+Two further items were struck rather than completed, when licensing was removed
+and the product became free: the Windows 11 24H2 machine identity problem and
+wiring release credentials into CI. Both existed only because activation did.
+The licensing implementation is preserved on `archive/licensing`.
 
 ---
 
