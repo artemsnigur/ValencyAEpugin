@@ -26,13 +26,6 @@ export type ThemeConfig = {
   radius: string;
   angle: string;
   anim: string;
-  bgImage: string;
-  bgType: string;
-  bgBlur: string;
-  bgOverlay: string;
-  bgSize: string;
-  bgHue: string;
-  bgTime: string;
 };
 
 /** Same key names the shipped panel uses - format compatibility, not shared
@@ -44,13 +37,6 @@ export const K = {
   radius: "valency.theme.radius",
   angle: "valency.theme.grad-angle",
   anim: "valency.theme.anim",
-  bgImage: "valency.theme.bg-image",
-  bgType: "valency.theme.bg-type",
-  bgBlur: "valency.theme.bg-blur",
-  bgOverlay: "valency.theme.bg-overlay",
-  bgSize: "valency.theme.bg-size",
-  bgHue: "valency.theme.bg-hue",
-  bgTime: "valency.theme.bg-time",
   audioVolume: "valency.theme.audio-volume",
   renderPrefix: "valency.render.prefix",
   layerColour: "valency.theme.layer-color",
@@ -67,13 +53,6 @@ export const DEFAULTS: ThemeConfig = {
   radius: "12",
   angle: "135deg",
   anim: "pop",
-  bgImage: "",
-  bgType: "image",
-  bgBlur: "0",
-  bgOverlay: "0.7",
-  bgSize: "cover",
-  bgHue: "0",
-  bgTime: "0",
 };
 
 const get = (key: string, fallback: string) => {
@@ -107,13 +86,6 @@ export const loadConfig = (): ThemeConfig => ({
   radius: get(K.radius, DEFAULTS.radius),
   angle: get(K.angle, DEFAULTS.angle),
   anim: get(K.anim, DEFAULTS.anim),
-  bgImage: get(K.bgImage, DEFAULTS.bgImage),
-  bgType: get(K.bgType, DEFAULTS.bgType),
-  bgBlur: get(K.bgBlur, DEFAULTS.bgBlur),
-  bgOverlay: get(K.bgOverlay, DEFAULTS.bgOverlay),
-  bgSize: get(K.bgSize, DEFAULTS.bgSize),
-  bgHue: get(K.bgHue, DEFAULTS.bgHue),
-  bgTime: get(K.bgTime, DEFAULTS.bgTime),
 });
 
 /**
@@ -138,16 +110,6 @@ export const applyConfig = (config: ThemeConfig) => {
   setToken("--grad-end", config.gradEnd);
   setToken("--radius", `${config.radius}px`);
   setToken("--grad-angle", config.angle);
-  setToken("--bg-blur", `${config.bgBlur}px`);
-  setToken("--bg-overlay", config.bgOverlay);
-  setToken("--bg-size", config.bgSize);
-  setToken("--bg-hue", `${config.bgHue}deg`);
-  setToken(
-    "--bg-image",
-    config.bgImage && config.bgType !== "video"
-      ? `url('file:///${config.bgImage}')`
-      : "none"
-  );
   document.body.setAttribute("data-anim", config.anim);
 };
 
@@ -158,18 +120,6 @@ export const persistConfig = (config: ThemeConfig) => {
   set(K.radius, config.radius);
   set(K.angle, config.angle);
   set(K.anim, config.anim);
-  set(K.bgBlur, config.bgBlur);
-  set(K.bgOverlay, config.bgOverlay);
-  set(K.bgSize, config.bgSize);
-  set(K.bgHue, config.bgHue);
-  set(K.bgTime, config.bgTime);
-  if (config.bgImage) {
-    set(K.bgImage, config.bgImage);
-    set(K.bgType, config.bgType);
-  } else {
-    remove(K.bgImage);
-    remove(K.bgType);
-  }
 };
 
 /**
@@ -209,7 +159,6 @@ export const writeSlotName = (n: number, name: string) => set(K.slotName(n), nam
 export const resetAll = () => {
   [
     K.bgColor, K.gradStart, K.gradEnd, K.radius, K.angle, K.anim,
-    K.bgImage, K.bgType, K.bgBlur, K.bgOverlay, K.bgSize, K.bgHue, K.bgTime,
     K.lastSlot,
   ].forEach(remove);
 };

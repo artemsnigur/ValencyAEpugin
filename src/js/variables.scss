@@ -50,12 +50,6 @@ $default-glow: rgba(77, 126, 168, 0.18);
   // updateTheme() has always kept the two in step.)
   --glow: #{$default-glow};
 
-  // Background layer tokens - the theme UI in step 09 drives all of these.
-  --bg-image: none;
-  --bg-blur: 0px;
-  --bg-size: cover;
-  --bg-overlay: 0.7;
-  --bg-hue: 0deg;
 }
 
 // NOT ported: style.css also carried a [data-theme="light"] block, but nothing

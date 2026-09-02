@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { evalTS } from "../../lib/utils/bolt";
 
 /** Injected from package.json at build time rather than hardcoded. */
@@ -21,9 +21,6 @@ import {
 } from "./themeStore";
 
 const SLOTS = [1, 2, 3, 4, 5, 6];
-const BG_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "mp4", "webm", "ogg"];
-const VIDEO_EXTS = ["mp4", "webm", "ogg"];
-
 /**
  * Theme panel.
  *
@@ -53,8 +50,6 @@ export const ThemePanel = () => {
     () => localStorage.getItem(K.layerColour) || "1"
   );
   const [engine, setEngine] = useState("cpu");
-
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     evalTS("getProjectRenderEngine").then(setEngine).catch(() => setEngine("cpu"));
@@ -101,50 +96,6 @@ export const ThemePanel = () => {
     loadSlot(n);
   };
 
-  const chooseBackground = () => {
-    const dialog =
-      window.cep?.fs?.showOpenDialogEx || window.cep?.fs?.showOpenDialog;
-    if (!dialog) return;
-    const res = dialog(false, false, "Select Background Media", "", BG_EXTS) as {
-      data?: string[];
-    };
-    const picked = res?.data?.[0];
-    if (!picked) return;
-    const path = decodeURIComponent(picked.replace("file://", "")).replace(/\\/g, "/");
-    const ext = path.split(".").pop()?.toLowerCase() || "";
-    update2({
-      bgImage: path,
-      bgType: VIDEO_EXTS.indexOf(ext) > -1 ? "video" : "image",
-    });
-  };
-
-  const update2 = (patch: Partial<ThemeConfig>) => {
-    const next = { ...config, ...patch };
-    setConfig(next);
-    applyConfig(next);
-    persistConfig(next);
-  };
-
-  const isVideo = config.bgType === "video" && config.bgImage !== "";
-
-  // Keep the background video element in step with the config.
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (isVideo) {
-      const wanted = `file:///${config.bgImage}`;
-      if (el.src !== wanted) el.src = wanted;
-      el.currentTime = Number(config.bgTime) || 0;
-      el.play().catch(() => {
-        // Autoplay can be refused; the still frame is still shown.
-      });
-    } else if (el.src) {
-      el.pause();
-      el.removeAttribute("src");
-      el.load();
-    }
-  }, [isVideo, config.bgImage, config.bgTime]);
-
   const row = (label: string, control: React.ReactNode, wide = false) => (
     <div className="align-row">
       <span className="row-label" style={wide ? { width: "60px" } : undefined}>{label}</span>
@@ -154,10 +105,6 @@ export const ThemePanel = () => {
 
   return (
     <>
-      {isVideo && (
-        <video ref={videoRef} id="bg-video" autoPlay loop muted playsInline />
-      )}
-
       <div className="panel compact-panel">
         <h3 style={{ textAlign: "center" }}>Saved Themes</h3>
         <p className="panel-hint" style={{ marginBottom: "6px" }}>
@@ -245,51 +192,6 @@ export const ThemePanel = () => {
           <button className="outline-btn pop-anim" style={{ fontSize: "11px", flex: 1 }}
             onClick={() => update("angle", "-135deg")}>↙ Diagonal (R-L)</button>
         </div>
-
-        <h3 style={{ textAlign: "center", marginTop: "15px" }}>Custom Background</h3>
-
-        <div className="flex-buttons" style={{ marginBottom: "8px" }}>
-          <button className="outline-btn pop-anim" style={{ flex: 2 }} onClick={chooseBackground}>
-            Choose Image/Video
-          </button>
-          <button
-            className="outline-btn pop-anim" style={{ flex: 1 }}
-            onClick={() => update2({ bgImage: "", bgType: "image" })}
-          >
-            Clear
-          </button>
-        </div>
-
-        {isVideo &&
-          row("Time:", (
-            <input
-              type="range" min="0" max="100" step="0.1" style={{ flex: 1 }}
-              title="Video Start Time"
-              value={config.bgTime}
-              onChange={(e) => update("bgTime", e.target.value)}
-            />
-          ))}
-
-        {row("Fit:", (
-          <select className="styled-select" style={{ flex: 1 }}
-            value={config.bgSize} onChange={(e) => update("bgSize", e.target.value)}>
-            <option value="cover">Cover (Fill)</option>
-            <option value="contain">Contain (Fit)</option>
-          </select>
-        ))}
-
-        {row("Blur:", (
-          <input type="range" min="0" max="30" style={{ flex: 1 }}
-            value={config.bgBlur} onChange={(e) => update("bgBlur", e.target.value)} />
-        ))}
-        {row("Dim:", (
-          <input type="range" min="0" max="1" step="0.05" style={{ flex: 1 }}
-            value={config.bgOverlay} onChange={(e) => update("bgOverlay", e.target.value)} />
-        ))}
-        {row("Hue:", (
-          <input type="range" min="0" max="360" style={{ flex: 1 }}
-            value={config.bgHue} onChange={(e) => update("bgHue", e.target.value)} />
-        ))}
 
         <h3 style={{ textAlign: "center", marginTop: "15px" }}>Preferences</h3>
 

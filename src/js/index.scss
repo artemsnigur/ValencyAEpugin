@@ -22,41 +22,16 @@ body {
 }
 
 body {
-  // Transparent so the ::after overlay tints whatever sits behind it - the
-  // background image or video the theme UI supplies in step 09.
-  background-color: transparent;
+  // Paints its own ground. The two pseudo-element layers that used to sit
+  // behind it existed only to composite a user background image or video, and
+  // that feature is gone: a photographic backdrop under a restrained interface
+  // solves the opposite problem to the one this design solves.
+  background-color: var(--bg-color);
   color: var(--text-color);
   padding: 10px;
   font-size: 12px;
   display: flex;
   flex-direction: column;
-}
-
-// Background image layer. Inert until step 09 sets --bg-image.
-body::before {
-  content: "";
-  position: absolute;
-  inset: -30px;
-  z-index: -2;
-  background-image: var(--bg-image);
-  background-size: var(--bg-size);
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: blur(var(--bg-blur)) hue-rotate(var(--bg-hue));
-  transform: translateZ(0);
-  transition: filter 0.3s ease;
-}
-
-// Colour wash over the background layer.
-body::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-color: var(--bg-color);
-  opacity: var(--bg-overlay);
-  pointer-events: none;
-  transition: background-color 0.4s ease, opacity 0.3s ease;
 }
 
 #app {
