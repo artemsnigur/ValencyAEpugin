@@ -19,9 +19,13 @@ The licensing implementation is preserved on `archive/licensing`.
 
 ---
 
-# Recorded decisions (not bugs, not queued work)
+# Recorded decisions
 
-## D1. The library does not require a cache folder
+## D1. The library browses without a cache folder — decided
+
+**Decided: leave it as it is.** The gate protects an optimisation, not data.
+Browsing works without a cache; it is only slower on repeat visits, and a media
+browser that refuses to browse is a strange first run.
 
 The original blocked the Library tab until a cache folder was chosen — the grid
 showed "Step 1: Set Cache Folder" and browsing was unavailable, and
@@ -31,15 +35,13 @@ The port **browses without one**, silently skipping the cache: `readCachedListin
 and `writeCachedListing` both return early when the folder is empty, so every
 visit is a fresh scan. Setting a folder turns caching on.
 
-Deliberately left as a divergence pending a decision, because the original's
-behaviour is arguable in both directions:
+The argument for keeping the gate was that it makes the cost explicit and stops
+users blaming the panel for slow browsing they could have avoided. That was
+outweighed: the cost is only ever slower repeat visits, and refusing to open at
+all is a worse first impression than being slow later.
 
-- **Keeping the gate** makes the cost explicit and stops users blaming the panel
-  for slow browsing they could have avoided. It is also a strange first-run
-  experience: a media browser that refuses to browse.
-- **Not gating** works immediately and degrades to "slower on large folders".
-  The risk is that nobody ever sets a cache folder and the feature is dead
-  weight.
+The residual risk is accepted — someone may never set a cache folder and never
+get caching. That is a smaller problem than a browser that will not browse.
 
 Note the *guard* on clearing the cache **is** restored — that one is about not
 silently doing nothing when a button is pressed.
