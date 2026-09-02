@@ -140,27 +140,29 @@ export const persistConfig = (config: ThemeConfig) => {
  * the tokens before anything renders.
  */
 export const applyStoredTheme = () => {
-  migrateLegacyConfig();
+  clearLegacyConfig();
   applyConfig(loadConfig());
 };
 
 /**
- * Carry a version 1 top-level config forward, once.
+ * Drop the version 1 top-level config.
  *
- * Only the accent survives: it is the one value in the old model the user
- * chose directly. bgColor, gradEnd and angle described a gradient over a
- * free-picked ground, and neither of those exists here.
+ * Nothing is carried forward, deliberately. The obvious migration - keep the
+ * old gradient start colour as the new accent - is wrong here: #ff007f was the
+ * *shipped default*, not a colour anyone picked, so migrating it would open
+ * the redesign in the exact neon the redesign exists to remove, for every user
+ * who had ever touched a theme control.
  *
- * Runs before the first applyConfig so the migrated accent is what paints,
- * rather than the default being shown and replaced a frame later.
+ * Saved slots are the opposite case and do keep their accent - see
+ * migrateSlot(). A slot was named and stored on purpose; a top-level config is
+ * only wherever the sliders were last left.
+ *
+ * Self-terminating: once the keys are gone the early return fires, so this
+ * costs one failed lookup per launch thereafter.
  */
-const migrateLegacyConfig = () => {
+const clearLegacyConfig = () => {
   try {
-    if (localStorage.getItem(K.palette) !== null) return; // already on v2
-    const gradStart = localStorage.getItem(LEGACY_K.gradStart);
-    if (gradStart === null) return; // nothing stored; defaults apply
-    set(K.palette, DEFAULTS.palette);
-    set(K.accent, gradStart);
+    if (localStorage.getItem(LEGACY_K.gradStart) === null) return;
     [LEGACY_K.bgColor, LEGACY_K.gradStart, LEGACY_K.gradEnd, LEGACY_K.angle]
       .forEach(remove);
   } catch {

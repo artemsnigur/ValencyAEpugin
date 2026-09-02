@@ -859,6 +859,20 @@ be its gradient start colour. Its palette is Olive regardless of what it was
 saved with, and its radius and animation carry over. The old background colour,
 gradient end and gradient angle are gone — that is the migration, not a bug.
 
+## [ ] R7 — The old top-level theme does *not* come back
+
+Slots migrate; the loose top-level config deliberately does not. `#ff007f` was
+the shipped default rather than anyone's choice, so carrying it forward would
+open the redesign in the exact colour it exists to remove.
+
+**Steps:** on a profile that used the panel before the redesign — check
+DevTools › Application › Local Storage for `valency.theme.grad-start` first, and
+if it is missing, set it to `#ff007f` by hand to reproduce. Reload the panel.
+
+**Correct:** the panel opens on Olive with the Olive accent. Not pink. Check
+storage again afterwards: `valency.theme.grad-start`, `.grad-end`, `.bg-color`
+and `.grad-angle` are all gone, cleared on first launch.
+
 ## [ ] R5 — Nothing flashes on open
 
 **Steps:** set a non-default palette, close the panel, reopen it. Watch the
