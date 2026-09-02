@@ -646,3 +646,21 @@ not undo an edit to a search box.
 **A failure means:** if nothing happens with panel focus, the host call is not
 landing — check the DevTools console at `localhost:8860`. If AE undoes while
 you are typing in a field, the editable-target guard is not matching.
+
+## [ ] P2 — Library thumbnail size control
+
+Restores the 2x2 / 3x3 / 4x4 radios the first-generation library UI had. The
+rewrite that replaced it dropped them and deleted their CSS, which is why this
+looked like collateral rather than a decision.
+
+**Steps:** open the Library tab with a folder of media showing. Switch between
+2x2, 3x3 and 4x4. Resize the panel at each. Close and reopen the panel.
+
+**Correct:** thumbnails get larger at 2x2 and smaller at 4x4, the choice
+persists across a reload, and the grid still reflows on resize — the columns
+are auto-fitted, so the setting drives the *minimum* tile width rather than a
+fixed column count. On a narrow panel 4x4 may show fewer than four columns;
+that is the auto-fit working, not a fault.
+
+**Default is 3x3**, which is the 110px minimum the grid had hardcoded, so an
+existing library looks unchanged until you touch the control.

@@ -918,7 +918,9 @@ h3 {
 .audio-progress-bar:hover { height: 8px; cursor: pointer; background: rgba(255,255,255,0.4); }
 .audio-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--grad-start), var(--grad-end)); transition: width 0.1s linear; }
 body[data-anim="glow"] .lib-item-container.pop-anim:hover { box-shadow: none !important; transform: none !important; filter: none !important; background: transparent !important; }
-.library-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; align-content: start; padding-bottom: 10px; }
+// The minimum column width was hardcoded at 110px. The size control drives
+// this token; the fallback keeps the original behaviour if nothing sets it.
+.library-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--lib-thumb-min, 110px), 1fr)); gap: 12px; align-content: start; padding-bottom: 10px; }
 .lib-item-container { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 100%; overflow: visible !important; padding: 0; position: relative; }
 .lib-folder, .lib-file { width: 100%; aspect-ratio: 16/9; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.02); border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; flex-shrink: 0; }
 .lib-item-container:hover .lib-folder,
@@ -1025,4 +1027,17 @@ input[type="range"] {
   filter: blur(var(--bg-blur)) hue-rotate(var(--bg-hue));
   pointer-events: none;
   transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+// Thumbnail size radios, restored from the first-generation library UI.
+.custom-toggles.lib-grid-size {
+  flex: 0 0 auto;
+  gap: 4px;
+  margin: 6px 0 2px;
+  justify-content: flex-end;
+
+  span {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
 }

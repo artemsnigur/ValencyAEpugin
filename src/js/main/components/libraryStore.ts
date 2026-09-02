@@ -19,6 +19,7 @@ export const KEYS = {
   tabs: "valency.library.tabs",
   activeTab: "valency.library.active-tab",
   audioVolume: "valency.theme.audio-volume",
+  gridSize: "valency.library.grid-size",
 };
 
 /** Extensions the shipped scanLibraryFolder accepted, carried over verbatim. */
@@ -188,3 +189,34 @@ export const writeJSON = (key: string, value: unknown) => {
 /** file:// URL for a media element, matching the shipped panel's form. */
 export const fileUrl = (p: string) =>
   p.startsWith("/") ? `file://${p}` : `file:///${p}`;
+
+/**
+ * Thumbnail grid size.
+ *
+ * The first-generation library UI had 2x2 / 3x3 / 4x4 radios; the rewrite that
+ * replaced it dropped them and deleted their CSS too, which is why this reads
+ * as collateral rather than a decision. The live grid already auto-fits, so
+ * restoring the control is a matter of driving its minimum column width.
+ *
+ * More columns means a smaller minimum, hence the inverse mapping.
+ */
+export const GRID_SIZES = [
+  { columns: 2, label: "2x2", min: 170 },
+  { columns: 3, label: "3x3", min: 110 },
+  { columns: 4, label: "4x4", min: 80 },
+];
+
+export const DEFAULT_GRID_COLUMNS = 3;
+
+export const readGridColumns = (): number => {
+  try {
+    const stored = Number(localStorage.getItem(KEYS.gridSize));
+    return GRID_SIZES.some((g) => g.columns === stored) ? stored : DEFAULT_GRID_COLUMNS;
+  } catch {
+    return DEFAULT_GRID_COLUMNS;
+  }
+};
+
+export const thumbMinFor = (columns: number) =>
+  (GRID_SIZES.find((g) => g.columns === columns) ||
+    GRID_SIZES.find((g) => g.columns === DEFAULT_GRID_COLUMNS)!).min;

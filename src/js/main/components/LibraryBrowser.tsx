@@ -1,14 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { evalTS, selectFolder } from "../../lib/utils/bolt";
 import { useHostAction } from "./useHostAction";
 import { LibraryCard } from "./LibraryCard";
 import {
   FolderListing,
+  GRID_SIZES,
   KEYS,
   LibEntry,
   LibTab,
   clearCache,
   listFolder,
+  readGridColumns,
+  thumbMinFor,
   listingMatches,
   readCachedListing,
   readJSON,
@@ -43,6 +53,7 @@ export const LibraryBrowser = () => {
   const [listing, setListing] = useState<FolderListing>({ folders: [], files: [] });
   const [query, setQuery] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
+  const [gridColumns, setGridColumns] = useState(readGridColumns);
   const [playing, setPlaying] = useState("");
   // Re-keyed on every path change so the grid replays its fade, which is what
   // triggerGridAnimation() did by removing and re-adding the class.
@@ -281,6 +292,27 @@ export const LibraryBrowser = () => {
         </button>
       </div>
 
+      <div className="custom-toggles lib-grid-size">
+        {GRID_SIZES.map((size) => (
+          <label key={size.columns}>
+            <input
+              type="radio"
+              name="grid-size"
+              checked={gridColumns === size.columns}
+              onChange={() => {
+                setGridColumns(size.columns);
+                try {
+                  localStorage.setItem(KEYS.gridSize, String(size.columns));
+                } catch {
+                  // Size is a convenience; failing to remember it is not fatal.
+                }
+              }}
+            />
+            <span>{size.label}</span>
+          </label>
+        ))}
+      </div>
+
       <div className="lib-breadcrumbs">
         {active.breadcrumbs.map((crumb, i) => (
           <span key={`${crumb.path}-${i}`}>
@@ -298,6 +330,9 @@ export const LibraryBrowser = () => {
           className={`library-grid folder-transition-in${
             deleteMode ? " delete-mode-active" : ""
           }`}
+          style={
+            { "--lib-thumb-min": `${thumbMinFor(gridColumns)}px` } as CSSProperties
+          }
         >
           {visible.folders.map((folder) => (
             <div
