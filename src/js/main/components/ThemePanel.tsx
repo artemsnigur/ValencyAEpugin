@@ -52,9 +52,6 @@ export const ThemePanel = () => {
   const [layerColour, setLayerColour] = useState(
     () => localStorage.getItem(K.layerColour) || "1"
   );
-  const [device, setDevice] = useState(
-    () => localStorage.getItem(K.renderDevice) || "cpu"
-  );
   const [engine, setEngine] = useState("cpu");
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -305,20 +302,6 @@ export const ThemePanel = () => {
               set(K.audioVolume, e.target.value);
             }}
           />
-        ), true)}
-
-        {row("Render:", (
-          <select
-            className="styled-select full-width" style={{ flex: 1, fontSize: "10px" }}
-            value={device}
-            onChange={(e) => {
-              setDevice(e.target.value);
-              set(K.renderDevice, e.target.value);
-            }}
-          >
-            <option value="cpu">[CPU] Standard Render</option>
-            <option value="gpu">[GPU] Hardware Accelerated</option>
-          </select>
         ), true)}
 
         {row("Prefix:", (

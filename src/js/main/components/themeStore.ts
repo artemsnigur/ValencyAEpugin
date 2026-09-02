@@ -39,7 +39,6 @@ export const K = {
   bgHue: "valency.theme.bg-hue",
   bgTime: "valency.theme.bg-time",
   audioVolume: "valency.theme.audio-volume",
-  renderDevice: "valency.render.device",
   renderPrefix: "valency.render.prefix",
   layerColour: "valency.theme.layer-color",
   lastSlot: "valency.theme.last-slot",
@@ -185,15 +184,13 @@ export const writeSlot = (n: number, config: ThemeConfig) =>
 export const readSlotName = (n: number) => get(K.slotName(n), `Slot ${n}`);
 export const writeSlotName = (n: number, name: string) => set(K.slotName(n), name);
 
-/** Clear theme keys. Render device is preserved, as the shipped reset did. */
+/** Clear theme keys. */
 export const resetAll = () => {
-  const device = get(K.renderDevice, "");
   [
     K.bgColor, K.gradStart, K.gradEnd, K.radius, K.angle, K.anim,
     K.bgImage, K.bgType, K.bgBlur, K.bgOverlay, K.bgSize, K.bgHue, K.bgTime,
     K.lastSlot,
   ].forEach(remove);
-  if (device) set(K.renderDevice, device);
 };
 
 export const LAYER_COLOURS = [
