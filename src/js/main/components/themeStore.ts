@@ -6,6 +6,19 @@
  * panels share these keys, so the shapes have to match exactly for a theme
  * saved in one to load in the other.
  */
+/**
+ * Slot payload version.
+ *
+ * Added while it is still free to: slots live under a Valency key, the rebrand
+ * took no migration path from the old product, so nobody outside this machine
+ * has one. That window closes the day the first copy ships.
+ *
+ * A slot written before this field existed reads as version 1. Bump when the
+ * shape changes and branch on the value rather than guessing from which keys
+ * happen to be present.
+ */
+export const SLOT_VERSION = 1;
+
 export type ThemeConfig = {
   bgColor: string;
   gradStart: string;
@@ -169,17 +182,25 @@ export const persistConfig = (config: ThemeConfig) => {
  */
 export const applyStoredTheme = () => applyConfig(loadConfig());
 
+type StoredSlot = ThemeConfig & { version?: number };
+
 export const readSlot = (n: number): ThemeConfig | null => {
   try {
     const raw = localStorage.getItem(K.slot(n));
-    return raw ? (JSON.parse(raw) as ThemeConfig) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredSlot;
+    // Unversioned means it predates the field, which is version 1. There is no
+    // version 2 yet, so nothing branches on it - the point is that when there
+    // is, the answer is stored rather than inferred.
+    const { version: _version, ...config } = parsed;
+    return config as ThemeConfig;
   } catch {
     return null;
   }
 };
 
 export const writeSlot = (n: number, config: ThemeConfig) =>
-  set(K.slot(n), JSON.stringify(config));
+  set(K.slot(n), JSON.stringify({ version: SLOT_VERSION, ...config }));
 
 export const readSlotName = (n: number) => get(K.slotName(n), `Slot ${n}`);
 export const writeSlotName = (n: number, name: string) => set(K.slotName(n), name);
