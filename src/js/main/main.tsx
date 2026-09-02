@@ -7,6 +7,7 @@ import { PresetBrowser } from "./components/PresetBrowser";
 import { RenderQueue } from "./components/RenderQueue";
 import { ThemePanel } from "./components/ThemePanel";
 import { ProjectUtilities } from "./components/ProjectUtilities";
+import { evalTS } from "../lib/utils/bolt";
 import "./main.scss";
 
 type TabId =
@@ -82,6 +83,38 @@ export const App = () => {
   }, [activeTab]);
 
   useLayoutEffect(positionIndicator, [positionIndicator]);
+
+  // Forward undo/redo to After Effects while the panel has focus.
+  //
+  // Without this Cmd+Z does nothing here: the panel is a separate CEF process,
+  // so the keystroke never reaches the host. The shipped panel did the same.
+  //
+  // One deliberate difference: it skips editable fields. The original
+  // intercepted every Cmd+Z, so pressing it while typing in a search box or
+  // the render prefix sent an undo to After Effects instead of undoing your
+  // typing.
+  useEffect(() => {
+    const isEditable = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      if (!node || !node.tagName) return false;
+      const tag = node.tagName.toLowerCase();
+      return tag === "input" || tag === "textarea" || node.isContentEditable;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z") return;
+      if (isEditable(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      evalTS(e.shiftKey ? "redo" : "undo").catch(() => {
+        // Nothing useful to say if the host call fails - the keystroke is lost
+        // either way, and a dialog here would be worse than silence.
+      });
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // CEP panels are resized by the host, and the panel can be laid out while
   // hidden, so re-measure on any nav-bar size change rather than on window

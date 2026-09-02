@@ -617,3 +617,32 @@ throwing — the Twixtor path guard is `haveSetting()` before `getSetting()`.
 Every tab renders with defaults and accepts new values that then persist.
 
 **A throw on any tab** means a missing-key path is unguarded; note which tab.
+
+---
+
+# Post-parity checks
+
+## [ ] P1 — Cmd+Z and Cmd+Shift+Z reach After Effects
+
+Restores something the shipped panel did and the port had lost: with panel
+focus, undo and redo were dead because the panel is a separate process and the
+keystroke never reached the host.
+
+**Steps:** click somewhere neutral in the panel (a tab, a heading — not a text
+field). Run any operation that changes the project, e.g. Analyze or Organize.
+Press Cmd+Z. Then Cmd+Shift+Z.
+
+**Correct:** the operation undoes and redoes in After Effects, exactly as if AE
+had focus.
+
+**Then the deliberate difference:** click into a text field — the preset search
+box, the library search box, or the render prefix in the Theme tab — type
+something, and press Cmd+Z.
+
+**Correct:** your *typing* undoes. After Effects is untouched. The shipped panel
+intercepted every Cmd+Z, so this case sent an undo to AE instead, and you could
+not undo an edit to a search box.
+
+**A failure means:** if nothing happens with panel focus, the host call is not
+landing — check the DevTools console at `localhost:8860`. If AE undoes while
+you are typing in a field, the editable-target guard is not matching.

@@ -1649,3 +1649,22 @@ export var getProjectRenderEngine = function (): string {
     return "cpu";
   }
 };
+
+// --- Undo / redo -------------------------------------------------------------
+
+/**
+ * Undo and redo, forwarded from the panel.
+ *
+ * After Effects exposes no scripting API for either, so these are the menu
+ * command ids - 16 and 17. Unlike the label lookups elsewhere in the original
+ * these are numeric, so they are not locale-dependent. The ids come from the
+ * shipped panel, which sent 17 on shift and 16 without: unambiguous about which
+ * is which.
+ */
+export var undo = function (): void {
+  app.executeCommand(16);
+};
+
+export var redo = function (): void {
+  app.executeCommand(17);
+};
