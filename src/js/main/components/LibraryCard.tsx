@@ -8,6 +8,13 @@ import {
   fileUrl,
 } from "./libraryStore";
 
+/**
+ * How long an off-screen card keeps its decoder before releasing it. Long
+ * enough to outlast a resize drag or a fast scroll, short enough that memory
+ * still comes back down promptly.
+ */
+const RELEASE_DELAY_MS = 500;
+
 type Props = {
   entry: LibEntry;
   favourite: boolean;
@@ -56,13 +63,31 @@ export const LibraryCard = ({
   useEffect(() => {
     const node = ref.current;
     if (!node || (!isVideo && !isImage)) return;
+
+    // Entering is immediate; leaving waits. Resizing the panel reflows the grid
+    // and moves every card, so without the delay cards cross the band boundary
+    // mid-drag and their src is torn down and re-set repeatedly - the flicker
+    // that made resizing a media folder look broken. Fast scrolling had the
+    // same problem in milder form.
+    let release: ReturnType<typeof setTimeout> | undefined;
     const observer = new IntersectionObserver(
-      (entries) => setNear(entries[0].isIntersecting),
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          if (release) clearTimeout(release);
+          setNear(true);
+        } else {
+          if (release) clearTimeout(release);
+          release = setTimeout(() => setNear(false), RELEASE_DELAY_MS);
+        }
+      },
       // The shipped panel used a 600px band above and below; same here.
       { root: null, rootMargin: "600px 0px" }
     );
     observer.observe(node);
-    return () => observer.disconnect();
+    return () => {
+      if (release) clearTimeout(release);
+      observer.disconnect();
+    };
   }, [isVideo, isImage]);
 
   const src = fileUrl(entry.path);
