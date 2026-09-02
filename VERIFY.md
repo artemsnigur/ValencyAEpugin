@@ -689,3 +689,25 @@ because neither `withFileTypes` nor the directory's own mtime can see an
 in-place overwrite. Browse a folder of several hundred files and compare how it
 feels against before. If it is noticeably slower, say so: the fallback would be
 to stat lazily or only on an explicit refresh.
+
+## [ ] P4 — A preview that cannot load says so
+
+The shipped panel had no `onError` on its media elements, so a corrupt,
+unreadable or unsupported file rendered as an empty tile — indistinguishable
+from one that simply had not lazy-loaded yet.
+
+**Steps:** put a deliberately broken file in a library folder — rename a `.txt`
+to `.png`, or truncate a video — and browse to it. Scroll it out of view and
+back.
+
+**Correct:** three states are now distinguishable. Off-screen shows the striped
+placeholder; loading shows it too; a failure shows a **red-bordered tile with
+an exclamation mark** and the tooltip "Preview unavailable". Scrolling away and
+back retries rather than staying failed.
+
+**This also makes the media-element ceiling visible.** Chromium caps
+simultaneous media elements per renderer, and past that limit `src` assignment
+silently no-ops. Previously those tiles just stayed blank; now, if the failure
+surfaces as an error, they will mark themselves. Browse a folder of several
+hundred **videos** and scroll fast — a cluster of broken tiles that recover on
+a second pass is the ceiling, not corrupt files.

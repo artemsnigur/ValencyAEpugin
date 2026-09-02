@@ -1041,3 +1041,21 @@ input[type="range"] {
     font-size: 10px;
   }
 }
+
+// A preview that could not load. Deliberately unlike .lib-placeholder, which
+// means "not loaded yet" - the shipped panel had no error state at all, so the
+// two were indistinguishable.
+.lib-broken {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 107, 107, 0.9);
+  background: rgba(255, 0, 0, 0.06);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+}

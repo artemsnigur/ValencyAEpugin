@@ -45,6 +45,13 @@ export const LibraryCard = ({
 
   const ref = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  // A new source is a new chance to succeed - re-entering the viewport should
+  // not inherit a previous failure.
+  useEffect(() => {
+    if (near) setFailed(false);
+  }, [near, entry.path]);
 
   useEffect(() => {
     const node = ref.current;
@@ -84,16 +91,37 @@ export const LibraryCard = ({
           ★
         </div>
 
+        {/*
+          Three states, deliberately distinguishable. The shipped panel had no
+          onError at all, so an unreadable file rendered as an empty tile that
+          looked identical to one still waiting to lazy-load.
+        */}
         {isVideo &&
-          (near ? (
-            <video src={src} muted loop playsInline preload="metadata" />
+          (failed ? (
+            <div className="lib-broken" title="Preview unavailable">!</div>
+          ) : near ? (
+            <video
+              src={src}
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              onError={() => setFailed(true)}
+            />
           ) : (
             <div className="lib-placeholder" />
           ))}
 
         {isImage &&
-          (near ? (
-            <img src={src} alt={entry.name} className="lib-thumb" />
+          (failed ? (
+            <div className="lib-broken" title="Preview unavailable">!</div>
+          ) : near ? (
+            <img
+              src={src}
+              alt={entry.name}
+              className="lib-thumb"
+              onError={() => setFailed(true)}
+            />
           ) : (
             <div className="lib-placeholder" />
           ))}
