@@ -187,18 +187,30 @@ h3 {
   }
 }
 
-// The shipped stylesheet gates these on body[data-anim], but the default
-// (no attribute) and all three named variants resolve to identical rules, so
-// the variants are cosmetic no-ops. Step 09 owns the data-anim selectors and
-// should check whether the theme UI's animation picker does anything at all.
+// --- Button feedback -------------------------------------------------------
+//
+// The shipped stylesheet gated these on body[data-anim] but every variant
+// resolved to identical rules, so its animation picker changed nothing. The
+// three now differ.
+//
+// Surface is unchanged: .pop-anim and inactive tab buttons, nothing else.
+//
+// The no-attribute default deliberately gets NONE of the three. Someone who has
+// never opened the picker did not choose Classic Pop - they have no attribute
+// at all - so giving them new motion would be a change they did not ask for.
+// They keep exactly the colour-and-brightness feedback the panel had before.
+// Explicitly choosing "pop" is what buys the scale the name promises.
+
 .pop-anim {
   cursor: pointer;
 }
 
+// Shared base. Every variant keeps this; they add to it rather than replace it.
 .pop-anim,
 .tab-btn:not(.active) {
   transition: background-color 0.12s ease, filter 0.12s ease,
-    opacity 0.12s ease, border-color 0.12s ease;
+    opacity 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease,
+    transform 0.09s ease-out;
 }
 
 .pop-anim:not(:disabled):hover,
@@ -210,6 +222,83 @@ h3 {
 .pop-anim:not(:disabled):active,
 .tab-btn:not(.active):active {
   filter: brightness(0.95);
+}
+
+// --- Classic Pop -----------------------------------------------------------
+// Sharp and immediate: a small scale on press that snaps straight back. Short,
+// no overshoot, no bounce curve. Crisp rather than decorative.
+//
+// Explicit selection only - see the note above about the no-attribute default.
+
+body[data-anim="pop"] .pop-anim:not(:disabled):active,
+body[data-anim="pop"] .tab-btn:not(.active):active {
+  transform: scale(1.035);
+}
+
+// --- Elastic Bounce --------------------------------------------------------
+// Overshoots and settles through two diminishing swings. 320ms total, chosen
+// so clicking several buttons in a row never waits on the previous one.
+
+@keyframes valencyElasticPress {
+  0% { transform: scale(1); }
+  28% { transform: scale(1.085); }
+  52% { transform: scale(0.972); }
+  76% { transform: scale(1.022); }
+  100% { transform: scale(1); }
+}
+
+body[data-anim="elastic"] .pop-anim:not(:disabled):active,
+body[data-anim="elastic"] .tab-btn:not(.active):active {
+  animation: valencyElasticPress 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+// --- Liquid Glass ----------------------------------------------------------
+// No scaling at all. The glow and background bloom instead, and a press adds a
+// brief brightness swell that fades rather than snaps. Both colours come from
+// the theme tokens, so it follows any user theme.
+
+body[data-anim="glow"] .pop-anim,
+body[data-anim="glow"] .tab-btn:not(.active) {
+  transition: background-color 0.28s ease, filter 0.28s ease,
+    opacity 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+body[data-anim="glow"] .pop-anim:not(:disabled):hover,
+body[data-anim="glow"] .tab-btn:not(.active):hover {
+  filter: brightness(1.04);
+  opacity: 1;
+  box-shadow: 0 0 14px var(--glow);
+  border-color: var(--grad-start);
+}
+
+@keyframes valencyGlassSwell {
+  0% { box-shadow: 0 0 14px var(--glow); filter: brightness(1.04); }
+  35% { box-shadow: 0 0 26px var(--glow); filter: brightness(1.14); }
+  100% { box-shadow: 0 0 14px var(--glow); filter: brightness(1.04); }
+}
+
+body[data-anim="glow"] .pop-anim:not(:disabled):active,
+body[data-anim="glow"] .tab-btn:not(.active):active {
+  animation: valencyGlassSwell 0.42s ease-out;
+  transform: none;
+}
+
+// --- Reduced motion --------------------------------------------------------
+// Falls back to the static feedback the panel had before any of this: colour
+// and brightness only, no transform, no keyframes.
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-anim:not(:disabled):active,
+  .tab-btn:not(.active):active,
+  body[data-anim="pop"] .pop-anim:not(:disabled):active,
+  body[data-anim="pop"] .tab-btn:not(.active):active,
+  body[data-anim="elastic"] .pop-anim:not(:disabled):active,
+  body[data-anim="elastic"] .tab-btn:not(.active):active,
+  body[data-anim="glow"] .pop-anim:not(:disabled):active,
+  body[data-anim="glow"] .tab-btn:not(.active):active {
+    transform: none;
+    animation: none;
+  }
 }
 
 .custom-toggles {

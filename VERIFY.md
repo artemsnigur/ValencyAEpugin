@@ -711,3 +711,80 @@ silently no-ops. Previously those tiles just stayed blank; now, if the failure
 surfaces as an error, they will mark themselves. Browse a folder of several
 hundred **videos** and scroll fast — a cluster of broken tiles that recover on
 a second pass is the ceiling, not corrupt files.
+
+## [ ] P5 — Render device dropdown is gone
+
+It persisted a choice nothing read. Removed rather than wired: wiring it would
+have made the panel mutate project settings via `gpuAccelType` and brought an
+undo question with it.
+
+**Steps:** Theme tab → Preferences.
+
+**Correct:** no Render dropdown. The read-only line below still reports the
+real engine — "Project render engine: CPU · Valency 1.5.0". Reset All Settings
+no longer has a device value to preserve, so nothing about it should look odd.
+
+## [ ] P6 — The three animation variants actually differ
+
+The shipped panel's picker offered Classic Pop, Elastic Bounce and Liquid
+Glass, and all three resolved to identical CSS — a menu that lied. They differ
+now. This is the only post-parity item that adds something the product never
+had.
+
+**Setup:** Theme tab → Anim. Test each against buttons *and* tab buttons —
+those are the only two surfaces, unchanged from before.
+
+**Classic Pop** — press should feel sharp: a small scale up and straight back,
+no bounce, over in about 90ms. Crisp, not decorative.
+
+**Elastic Bounce** — press should overshoot and settle through two diminishing
+swings, about 320ms. Click several buttons in quick succession: **each press
+must feel immediate**, never queued behind the previous animation. If it feels
+laggy, the duration is too long and should come down.
+
+**Liquid Glass** — no scaling at all. Hover should bloom the glow and tint the
+border; press should swell the glow brighter and fade it back rather than snap.
+Calm.
+
+**Then change your theme colours** and re-test Glass. Its glow and border come
+from `--glow` and `--grad-start`, so it must follow any user theme rather than
+looking right only on the default magenta.
+
+## [ ] P7 — The no-attribute default is unchanged
+
+**Steps:** on a profile that has never touched the Anim dropdown — clear
+`valency.theme.anim` in DevTools if needed — press buttons and tabs.
+
+**Correct:** exactly the colour-and-brightness feedback the panel had before
+this work. **No scale, no bounce, no glow swell.** Someone who never opened the
+picker did not choose Classic Pop; they have no attribute at all, and should
+see no new motion. Choosing "pop" explicitly is what adds the scale.
+
+## [ ] P8 — Tab highlight tracks correctly during the press animations
+
+The sliding highlight used to be measured with `getBoundingClientRect`, which
+reflects CSS transforms. All three variants scale or animate tab buttons, so a
+re-measure landing mid-press would have sized the highlight to the *scaled*
+button. It now uses `offsetWidth`/`offsetLeft`, which are layout values and
+transform-immune.
+
+**Steps:** with **Elastic Bounce** selected — the largest movement — click
+rapidly across all six tabs, back and forth. Then resize the panel while
+pressing a tab. Then switch tabs with the panel very narrow and very wide.
+
+**Correct:** the highlight always ends up exactly the width and position of the
+active tab. No jitter, no highlight left slightly too wide or offset after a
+fast click.
+
+**A failure here is the measurement, not the animation** — try it with Liquid
+Glass, which does not scale. If Glass is fine and Elastic is not, the transform
+is still reaching the measurement somehow.
+
+## [ ] P9 — Reduced motion falls back cleanly
+
+**Steps:** turn on System Settings › Accessibility › Display › Reduce motion,
+then try all three variants.
+
+**Correct:** all three collapse to the same static colour-and-brightness
+feedback — no scale, no keyframes, no glow swell. The dropdown still remembers
+your choice; it just has no visible effect while the system setting is on.

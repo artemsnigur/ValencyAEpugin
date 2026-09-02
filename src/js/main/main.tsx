@@ -71,14 +71,18 @@ export const App = () => {
     const indicator = indicatorRef.current;
     if (!btn || !nav || !indicator) return;
 
-    const btnBox = btn.getBoundingClientRect();
-    const navBox = nav.getBoundingClientRect();
+    // offsetWidth/offsetLeft rather than getBoundingClientRect: these are
+    // layout values and are unaffected by CSS transforms. The press animations
+    // scale tab buttons, and a rect measured mid-press would size the highlight
+    // to the scaled button. offsetParent is the nav bar, which is positioned.
+    const width = btn.offsetWidth;
+    const left = btn.offsetLeft - nav.clientLeft;
     // A hidden or not-yet-laid-out panel measures zero; leave the highlight
     // where it is rather than collapsing it.
-    if (btnBox.width === 0) return;
+    if (width === 0) return;
 
-    indicator.style.width = `${btnBox.width}px`;
-    indicator.style.transform = `translateX(${btnBox.left - navBox.left}px)`;
+    indicator.style.width = `${width}px`;
+    indicator.style.transform = `translateX(${left}px)`;
     indicator.style.opacity = "1";
   }, [activeTab]);
 
