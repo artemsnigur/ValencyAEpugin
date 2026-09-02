@@ -20,7 +20,19 @@ const PRESET_TWEEN_MS = 350;
 
 /** Smallest either panel may be squeezed to while dragging the splitter. */
 const SPLITTER_MIN_PANEL = 130;
-const TOP_HEIGHT_KEY = "valency.graph.top-height";
+
+/**
+ * The split is stored as a fraction of the container, not a pixel height.
+ *
+ * Pixels were clamped only inside the drag handler, so nothing re-clamped them
+ * when the panel itself changed size: shrink the panel and a stored 400px top
+ * pane ends up taller than its container, squeezing the preset grid to nothing.
+ * A fraction survives any resize by construction and needs no observer.
+ *
+ * New key deliberately - a stored pixel value read as a fraction would be
+ * nonsense, and nobody outside this machine has one.
+ */
+const TOP_FRACTION_KEY = "valency.graph.top-fraction";
 
 const curvePath = (p1: Point, p2: Point) =>
   `M 0 100 C ${p1.x} ${p1.y}, ${p2.x} ${p2.y}, 100 0`;
@@ -44,10 +56,10 @@ export const GraphEditor = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const tweenRef = useRef<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const [topHeight, setTopHeight] = useState<number | null>(() => {
+  const [topFraction, setTopFraction] = useState<number | null>(() => {
     try {
-      const stored = localStorage.getItem(TOP_HEIGHT_KEY);
-      return stored ? Number(stored) : null;
+      const stored = Number(localStorage.getItem(TOP_FRACTION_KEY));
+      return stored > 0 && stored < 1 ? stored : null;
     } catch {
       return null;
     }
@@ -120,16 +132,22 @@ export const GraphEditor = () => {
       const root = rootRef.current;
       if (!root) return;
       const box = root.getBoundingClientRect();
-      const next = e.clientY - box.top;
-      if (next >= SPLITTER_MIN_PANEL && next <= box.height - SPLITTER_MIN_PANEL) {
-        setTopHeight(next);
-      }
+      if (box.height <= SPLITTER_MIN_PANEL * 2) return;
+      // Clamp in pixels, store as a fraction: the minimum is a real physical
+      // size, but what is persisted has to survive the container changing.
+      const px = Math.min(
+        Math.max(e.clientY - box.top, SPLITTER_MIN_PANEL),
+        box.height - SPLITTER_MIN_PANEL
+      );
+      setTopFraction(px / box.height);
     };
     const onUp = () => {
       setSplitting(false);
-      setTopHeight((current) => {
+      setTopFraction((current) => {
         try {
-          if (current !== null) localStorage.setItem(TOP_HEIGHT_KEY, String(current));
+          if (current !== null) {
+            localStorage.setItem(TOP_FRACTION_KEY, String(current));
+          }
         } catch {
           // Persisting the split is a convenience, not worth failing over.
         }
@@ -204,9 +222,16 @@ export const GraphEditor = () => {
 
   const shown = tab === "builtin" ? BUILTIN_PRESETS : favourites;
 
+  // flex-basis as a percentage rather than a pixel height: the pane keeps its
+  // proportion at any container size, and the minimums stop either pane
+  // collapsing when the panel gets very short.
   const topPanelStyle =
-    topHeight !== null
-      ? { flex: "none" as const, height: `${topHeight}px`, marginBottom: 0, minHeight: "120px" }
+    topFraction !== null
+      ? {
+          flex: `0 0 ${(topFraction * 100).toFixed(3)}%`,
+          marginBottom: 0,
+          minHeight: `${SPLITTER_MIN_PANEL}px`,
+        }
       : { flex: 1, marginBottom: 0, minHeight: "120px" };
 
   return (
